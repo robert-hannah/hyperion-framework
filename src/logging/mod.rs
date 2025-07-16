@@ -20,5 +20,4 @@
 // limitations under the License.
 // -------------------------------------------------------------------------------------------------
 
-pub mod console;
 pub mod logging_service;

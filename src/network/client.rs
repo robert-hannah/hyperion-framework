@@ -132,10 +132,11 @@ where
                                         self.send_retries += 1;
 
                                         if self.send_retries >= self.max_send_retries {
-                                            log::warn!("{} Client: {} failed to send message after {} retries. Closing client...", self.connection_name, self.server_address, self.max_send_retries);
+                                            log::warn!("{} Client: {} failed to send message after {} retries. Closing client...",
+                                                self.connection_name, self.server_address, self.max_send_retries);
                                             self.internal_client_state = false;
 
-                                            // Close the stream
+                                            // Close stream
                                             if let Err(e) = stream.shutdown().await {
                                                 log::warn!("Failed to shutdown stream: {e:?}");
                                             }

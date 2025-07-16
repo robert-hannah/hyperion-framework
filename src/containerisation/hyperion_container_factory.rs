@@ -40,7 +40,7 @@ use crate::containerisation::hyperion_container::HyperionContainer;
 use crate::containerisation::traits::{
     ContainerIdentidy, HyperionContainerDirectiveMessage, Initialisable, LogLevel, Run,
 };
-use crate::data_management::logging_service::initialise_logger;
+use crate::logging::logging_service::initialise_logger;
 use crate::network::network_topology::NetworkTopology;
 use crate::network::server::Server;
 use crate::utilities::load_config;
@@ -89,14 +89,7 @@ where
         log::debug!("{key}: {value}");
     }
 
-    // TODO: Build UI
-    // let mut console = Console::new(network_topology.clone(), container_state.clone(), container_state_notify.clone(), console_rx);
-    // task::spawn(async move {
-    //     if let Err(e) = console.run_console().await {
-    //         log::error!("Console encountered an error: {e:?}");
-    //     }
-    // });
-
+    // TODO: Improve startup messaging. Implement project boilerplate printout etc
     log::info!(
         "Building Hyperion Container for {}...",
         component_config

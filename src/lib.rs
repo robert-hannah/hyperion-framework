@@ -19,8 +19,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // -------------------------------------------------------------------------------------------------
+
 pub mod containerisation;
-pub mod data_management;
+pub mod logging;
 pub mod messages;
 pub mod network;
 pub mod test;
