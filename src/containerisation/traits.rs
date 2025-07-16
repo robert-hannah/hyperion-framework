@@ -43,8 +43,7 @@ pub trait Initialisable {
         config: StdArc<Self::ConfigType>,
     ) -> Self;
 }
-// For example:
-// Hyperion Network Containerisation - Initialise Component
+// For example, Hyperion Network Containerisation - Initialise Component
 // impl Initialisable for Component {
 //     type ConfigType = Config;
 //     fn initialise(container_state: StdArc<AtomicUsize>, container_state_notify: StdArc<Notify>, config: StdArc<Self::ConfigType>) -> Self {
@@ -55,15 +54,12 @@ pub trait Initialisable {
 
 #[async_trait]
 pub trait Run {
-    // Instead of using async fn (which Rust bans for traits as return type size is unknown at compile time), run returns a future explicitly
-    // The returned future must be Send, meaning it can be safely moved to another thread :) Using box so we can return many types of Futures
-    // Future needs to be Pinned inside the box so its size can be known and be compatible with tokio runtime
+    // Uses async_trait which isn't perfect and does introduce a small overhead, but it is a lot
+    // cleaner than the alternative. Since this is only used once to start the component, I don't
+    // see it as a big deal. Performance overhead comes from lack of return type (compiler can't optimise)
 
-    // OK, scratch all that, async_trait is a thing now. Not perfect and does introduce a small overhead, but it is a lot cleaner
-    // Seeing we're only going to call this only once to start the component, it's not a big deal
-    // Also there's no return type, hence the performance overhead -> can't optimise
-
-    // Using self, instead of &mut self, as the clone must be consumed by Run to ensure a fresh state is kept in the container
+    // Using self, instead of &mut self, as the clone must be consumed by Run to ensure a fresh
+    // state is kept in the container
     type Message;
     async fn run(
         self,
@@ -71,8 +67,7 @@ pub trait Run {
         comp_out_tx: Sender<ClientBrokerMessage<Self::Message>>,
     );
 }
-// For exmaple:
-// Hyperion Network Containerisation - Run Component
+// For example, Hyperion Network Containerisation - Run Component
 // #[async_trait]
 // impl Run for Component {
 //     type Message = ContainerMessage;
@@ -105,7 +100,7 @@ pub trait Run {
 pub trait HyperionContainerDirectiveMessage {
     fn get_container_directive_message(&self) -> Option<&ContainerDirective>;
 }
-//For exmaple:
+// For example,
 // impl HyperionContainerDirectiveMessage for ContainerMessage {
 //     // Gets ContainerDirective if is instance
 //     fn get_container_directive_message(&self) -> Option<&ContainerDirective> {
@@ -120,7 +115,7 @@ pub trait HyperionContainerDirectiveMessage {
 pub trait ContainerIdentidy {
     fn container_identity(&self) -> HashMap<String, String>;
 }
-// For example:  (This is slightly memory inefficient because it uses hashmap but isn't too bad. Could use lazy static if being pedantic)
+// For example,
 // impl ContainerIdentidy for Config {
 //     fn container_identity(&self) -> HashMap<String, String> {
 //         let mut identity = HashMap::new();
@@ -135,7 +130,7 @@ pub trait ContainerIdentidy {
 pub trait LogLevel {
     fn log_level(&self) -> &str;
 }
-// For example:
+// For example,
 // impl LogLevel for Config {
 //     fn log_level(&self) -> &str {
 //         &self.logging.level

@@ -20,7 +20,6 @@
 // limitations under the License.
 // -------------------------------------------------------------------------------------------------
 
-pub mod load_animation;
 pub mod load_config;
 pub mod time_utilities;
 pub mod tx_sender;

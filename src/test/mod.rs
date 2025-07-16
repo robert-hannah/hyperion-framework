@@ -22,5 +22,4 @@
 
 mod mock_container_message;
 mod test_client;
-mod test_logging;
 mod test_server;

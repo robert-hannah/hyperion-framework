@@ -34,11 +34,11 @@ pub fn deserialise_message<T: DeserializeOwned>(data: &[u8]) -> Result<T, serde_
     serde_json::from_slice(data)
 }
 
-// Usage:
-// Serialize
+// Example usage:
+// Serialise
 // let bytes = serialise_message(&msg).expect("Serialisation failed");
-// println!("Serialized: {:?}", serialized);
+// println!("Serialized: {:?}", bytes);
 
-// // Deserialize
+// Deserialise
 // let message: T = serialiser::deserialise_message(&buf[..n]).expect("Message deserialisation failed");
-// println!("Deserialized: {:?}", deserialized);
+// println!("Deserialized: {:?}", message);

@@ -26,10 +26,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 // Package
 use serde::{Serialize, de::DeserializeOwned};
+use tokio::io::AsyncReadExt;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{Notify, mpsc};
-// use tokio::time::{timeout, Duration};
-use tokio::io::AsyncReadExt;
 use tokio::task::JoinSet;
 
 // Local
@@ -70,8 +69,10 @@ where
         })
     }
 
-    // These functions are static as they only handle StdArc<Server<T>>. This is because self is a server and not a StdArc<Server<T>>.
-    // Using StdArc on objects for multithreaded async tasks is overall a good idea though, maintains atomicity. It's just a bit of an ugly implementation.
+    // These functions are static as they only handle StdArc<Server<T>>. This is because self is a
+    // server and not a StdArc<Server<T>>.
+    // I think using StdArc on objects for multithreaded async tasks is overall a good idea though,
+    // maintains atomicity. It's just a bit of an ugly implementation.
 
     // ========================================================================
     //    STATIC: Run multi-thread async Server
@@ -92,7 +93,8 @@ where
                             // Doing this as String and Sender are expensive to clone and StdArc::clone is far more atomic
                             let handler = StdArc::clone(&arc_server);
                             join_set.spawn(async move {
-                                Server::handle_stream_notification(&handler, stream).await;  // Spawns a new handler for each client connection
+                                // Spawn new handler for each client connection
+                                Server::handle_stream_notification(&handler, stream).await;
                             });
                         },
 
@@ -137,10 +139,8 @@ where
 
         loop {
             tokio::select! {
-                // Attempt to read from steam (All results must be wrapped in Ok(), other than inactivity err)
-                // timeout_read_result = timeout(Duration::from(30), stream.read(&mut buf)) => {  // Timeout connection after x seconds
-                // This is also problematic because a client doesn't seem to know that it's been disconnected so no error is thrown
-                // client end when a message is sent along it to the server which won't be listening for it
+                // Attempt to read from stream (All results must be wrapped in Ok(),
+                // other than inactivity err)
                 read_result = stream.read(&mut buf) => {
                     match read_result {
                         Ok(0) => {

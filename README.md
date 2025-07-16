@@ -15,7 +15,7 @@ A lightweight Rust framework for building modular, component-based systems with 
 
 Add this to your `Cargo.toml`:
 
-`hyperion-network = 0.2.0`
+`hyperion-network = 0.3.0`
 
 ## Project Structure
 
