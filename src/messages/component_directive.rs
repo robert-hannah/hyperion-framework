@@ -28,5 +28,5 @@ pub enum ComponentDirective {
     SetToActive,  // Start/resume messages to component
     SetToDormant, // Block messages to component
     WriteToFile, // Generic statement for component to write whatever data it has to whatever file it's configured to write
-    // TODO: Add more!
+                 // TODO: Add more!
 }

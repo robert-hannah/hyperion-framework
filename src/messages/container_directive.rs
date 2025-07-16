@@ -29,11 +29,11 @@ use crate::containerisation::container_state::ContainerState;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ContainerDirective {
     // IMPLEMENTED
-    Shutdown,                       // Shutdown local container
-    SystemShutdown,                 // Shutdown command that is propagated through the container network
+    Shutdown,       // Shutdown local container
+    SystemShutdown, // Shutdown command that is propagated through the container network
     // TO BE IMPLEMENTED
-    RetryAllConnections,            // Retries any broken connections
-    Heartbeat,                      // Container heartbeat
-    FriendStateRequest,             // Request the state of a friend container
-    StateResponse(ContainerState),  // Response to a container state request
+    RetryAllConnections,           // Retries any broken connections
+    Heartbeat,                     // Container heartbeat
+    FriendStateRequest,            // Request the state of a friend container
+    StateResponse(ContainerState), // Response to a container state request
 }
