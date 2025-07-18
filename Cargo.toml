@@ -8,10 +8,22 @@ description = "A lightweight component-based TCP framework for building service-
 
 repository = "https://github.com/bazzz-1/hyperion-framework"
 homepage = "https://github.com/bazzz-1/hyperion-framework"
-documentation = "https://docs.rs/hyperion-framework"
+documentation = "https://github.com/Bazzz-1/hyperion-framework-examples"
 readme = "README.md"
-keywords = ["framework", "tcp", "components", "networking", "containerisation"]
-categories = ["network-programming", "command-line-utilities"]
+keywords = [
+    "framework",
+    "tcp",
+    "components",
+    "networking",
+    "containerisation"
+]
+categories = [
+    "network-programming",
+    "asynchronous",
+    "concurrency",
+    "command-line-interface",
+    "config"
+]
 exclude = [
     "**/*.json", "**/*.yml", ".gitignore", ".cargo_vcs_info.json"
 ]
