@@ -1,21 +1,47 @@
 # hyperion-framework
 
-A lightweight Rust framework for building modular, component-based systems with built-in TCP messaging and CLI control.
+A lightweight component-based TCP framework for building service-oriented Rust applications with CLI control, async messaging, and lifecycle management.
 
-## Features
+## Quickfire Features
 
 - 🔌 **Component-Based Architecture**: Build modular systems with loosely coupled components
 - 🌐 **TCP Communication**: Built-in networking support for distributed systems
+- ⚙️ **Configuration Handling**: Built in unique config and network topology handling for each component
 - 💻 **CLI Integration**: Command-line interface for system control and monitoring
 - 🔄 **State Management**: Robust component state handling and lifecycle management
 - 📦 **Containerisation**: Simplified component containment and management
 - 🚀 **Async Support**: Built on tokio for high-performance async operations
 
-## Installation
+## Hyperion Overview
+Hyperion is a lightweight, component-based framework for building distributed Rust applications using TCP messaging. It helps you split large programs into modular, asynchronous services—each wrapped in a HyperionContainer.
+
+Each component becomes a self-contained, event-driven service that:
+
+    Listens and responds to structured TCP messages
+
+    Exposes a CLI for control and inspection
+
+    Handles its own config parsing, logging, and lifecycle state (start/restart/shutdown)
+
+Hyperion is ideal for service-oriented projects where you want clean separation of logic, real-time communication, and 
+container-like encapsulation within native Rust programs. 
+
+The framework makes it simple to bring your project into a fully asynchronous and multithreaded service-based environment, 
+enabling independent component development, easier debugging, and scalability.
+
+
+## Installation via ![**crates.io**](https://crates.io/crates/hyperion-framework)
 
 Add this to your `Cargo.toml`:
 
-`hyperion-network = 0.3.0`
+`hyperion-network = 0.3.1`
+
+
+## ![**Example Implementation**](https://github.com/Bazzz-1/hyperion-framework-examples)
+
+## ![**Documentation**](https://docs.rs/hyperion-framework)
+
+
 
 ## Project Structure
 
@@ -34,10 +60,6 @@ Add this to your `Cargo.toml`:
 - log (0.4.27) - Logging infrastructure
 - colored (3.0.0) - Terminal coloring
 - async-trait (0.1.88) - Async trait support
-
-## Documentation
-
-Detailed documentation is available in the `docs/` directory.
 
 ## Contributing
 

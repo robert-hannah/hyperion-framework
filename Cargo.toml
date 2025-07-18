@@ -1,17 +1,32 @@
 [package]
 name = "hyperion-framework"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2024"
 license = "Apache-2.0"
 authors = ["Robert Hannah (https://github.com/Bazzz-1)"]
-description = "A lightweight Rust framework for building modular, component-based systems with TCP messaging and CLI control."
+description = "A lightweight component-based TCP framework for building service-oriented Rust applications with CLI control, async messaging, and lifecycle management."
 
 repository = "https://github.com/bazzz-1/hyperion-framework"
 homepage = "https://github.com/bazzz-1/hyperion-framework"
-documentation = "https://docs.rs/hyperion-framework"
+documentation = "https://github.com/Bazzz-1/hyperion-framework-examples"
 readme = "README.md"
-keywords = ["rust", "framework", "tcp", "cli", "components"]
-categories = ["network-programming", "command-line-utilities"]
+keywords = [
+    "framework",
+    "tcp",
+    "components",
+    "networking",
+    "containerisation"
+]
+categories = [
+    "network-programming",
+    "asynchronous",
+    "concurrency",
+    "command-line-interface",
+    "config"
+]
+exclude = [
+    "**/*.json", "**/*.yml", ".gitignore", ".cargo_vcs_info.json"
+]
 
 
 [dependencies]
