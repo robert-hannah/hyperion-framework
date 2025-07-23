@@ -13,7 +13,7 @@ A lightweight component-based TCP framework for building service-oriented Rust a
 - 🚀 **Async Support**: Built on tokio for high-performance async operations
 
 ## Hyperion Overview
-Hyperion is a lightweight, component-based framework for building distributed Rust applications using TCP messaging. It helps you split large programs into modular, asynchronous services—each wrapped in a HyperionContainer.
+Hyperion is designed around a component-based architecture, allowing you to create modular services that communicate over TCP. Each component is encapsulated in a `HyperionContainer`, which manages its lifecycle, configuration, and state.
 
 Each component becomes a self-contained, event-driven service that:
 
@@ -26,20 +26,25 @@ Each component becomes a self-contained, event-driven service that:
 Hyperion is ideal for service-oriented projects where you want clean separation of logic, real-time communication, and 
 container-like encapsulation within native Rust programs. 
 
-The framework makes it simple to bring your project into a fully asynchronous and multithreaded service-based environment, 
-enabling independent component development, easier debugging, and scalability.
+The framework makes it simple to bring your project into a fully asynchronous and multithreaded service-based environment, enabling independent component development, easier debugging, and scalability.
+
+Hyperion is also built on top of the Tokio async runtime, enabling high-performance, non-blocking operations.
 
 
-## Installation via ![**crates.io**](https://crates.io/crates/hyperion-framework)
+## Architecture Overview
+![Alt text](docs/architecture_diagram.jpg)
+
+
+## Installation via [**crates.io**](https://crates.io/crates/hyperion-framework)
 
 Add this to your `Cargo.toml`:
 
 `hyperion-network = 0.3.1`
 
 
-## ![**Example Implementation**](https://github.com/Bazzz-1/hyperion-framework-examples)
+## [**Example Implementation**](https://github.com/Bazzz-1/hyperion-framework-examples)
 
-## ![**Documentation**](https://docs.rs/hyperion-framework)
+## [**Documentation**](https://docs.rs/hyperion-framework)
 
 
 
