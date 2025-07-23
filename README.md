@@ -33,7 +33,7 @@ Hyperion is also built on top of the Tokio async runtime, enabling high-performa
 
 ## Architecture Overview
 
-![alt text](https://github.com/Bazzz-1/hyperion-framework/tree/add-diagram/docs/hyperion-architecture.png)
+[alt text](https://github.com/Bazzz-1/hyperion-framework/tree/add-diagram/docs/hyperion-architecture.png)
 
 
 ## Installation via [**crates.io**](https://crates.io/crates/hyperion-framework)
