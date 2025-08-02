@@ -24,5 +24,5 @@ pub mod containerisation;
 pub mod logging;
 pub mod messages;
 pub mod network;
-pub mod test;
+mod test;
 pub mod utilities;

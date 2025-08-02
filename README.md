@@ -34,12 +34,15 @@ enabling independent component development, easier debugging, and scalability.
 
 Add this to your `Cargo.toml`:
 
-`hyperion-network = 0.3.1`
+`hyperion-network = 0.3.2`
 
 
 ## ![**Example Implementation**](https://github.com/Bazzz-1/hyperion-framework-examples)
+https://github.com/Bazzz-1/hyperion-framework-examples
 
-## ![**Documentation**](https://docs.rs/hyperion-framework)
+## **Documentation**
+Coming soon...
+In the meantime, please check out the example implementation! 
 
 
 
