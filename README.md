@@ -39,7 +39,7 @@ Hyperion is also built on top of the Tokio async runtime, enabling high-performa
 
 Add this to your `Cargo.toml`:
 
-`hyperion-network = 0.3.1`
+`hyperion-network = 0.3.2`
 
 
 ## [**Example Implementation**](https://github.com/Bazzz-1/hyperion-framework-examples)
@@ -69,6 +69,12 @@ Add this to your `Cargo.toml`:
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a PR with a comprehensive description of work done.
+
+### Current TODOs
+- Container heartbeats/master container state request mechanic
+- Manually retry connections if the connection retry cap is reached
+- Improved container startup boilerplate
+- Generally improve unit and component test coverage
 
 ## License
 

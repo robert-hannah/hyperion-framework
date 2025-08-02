@@ -39,13 +39,12 @@ use crate::utilities::tx_sender::add_to_tx_with_retry;
 
 pub struct ClientBroker<T> {
     messaging_active: bool,
-    // network_topology:           StdArc<NetworkTopology>,        // TODO: Use this to restart connections?
-    client_senders: HashMap<String, mpsc::Sender<T>>, // TODO: Make this not a hash map
+    // network_topology:           StdArc<NetworkTopology>,        // TODO: Use this to restart connections
+    client_senders: HashMap<String, mpsc::Sender<T>>,
     client_threads: JoinSet<()>,
 }
 
 // TODO: Check client state for restart when needed
-// TODO: Actual broker part
 
 impl<T> ClientBroker<T>
 where
@@ -57,7 +56,7 @@ where
         container_state_notify: StdArc<Notify>,
     ) -> Self {
         // Gather connections
-        // This must be cloned as topolgy currently doesn't live that long
+        // Clone topology to prolong life
         let connections: Vec<Connection> = network_topology
             .client_connections
             .client_connection_vec
