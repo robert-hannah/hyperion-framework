@@ -69,27 +69,14 @@ where
 {
     // Read Component and network configs (program should exit if this fails)
     let config_path: PathBuf = fs::canonicalize(config_path_str)
-        .unwrap_or_else(|e| panic!("Could not canonicalize '{}': {}", config_path_str, e));
-    let component_config: StdArc<C> =
-        load_config::load_config::<C>(&config_path).unwrap_or_else(|e| {
-            panic!(
-                "Failed to load component config from '{:?}': {}",
-                config_path, e
-            )
-        });
+        .unwrap_or_else(|e| panic!("Could not canonicalize '{config_path_str}': {e}"));
+    let component_config: StdArc<C> = load_config::load_config::<C>(&config_path)
+        .unwrap_or_else(|e| panic!("Failed to load component config from '{config_path:?}': {e}"));
     let network_topology_path: PathBuf = fs::canonicalize(network_topology_path_str)
-        .unwrap_or_else(|e| {
-            panic!(
-                "Could not canonicalize '{}': {}",
-                network_topology_path_str, e
-            )
-        });
+        .unwrap_or_else(|e| panic!("Could not canonicalize '{network_topology_path_str}': {e}"));
     let network_topology: StdArc<NetworkTopology> =
         load_config::load_config::<NetworkTopology>(&network_topology_path).unwrap_or_else(|e| {
-            panic!(
-                "Failed to load network topology from '{:?}': {}",
-                network_topology_path, e
-            )
+            panic!("Failed to load network topology from '{network_topology_path:?}': {e}")
         });
 
     // Initialise logger
