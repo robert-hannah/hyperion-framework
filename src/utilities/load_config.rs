@@ -31,7 +31,7 @@ use serde::de::DeserializeOwned;
 use serde_xml_rs::from_str;
 
 pub fn load_config<T: DeserializeOwned>(
-    absolute_file_path: PathBuf,
+    absolute_file_path: &PathBuf,
 ) -> Result<StdArc<T>, Box<dyn std::error::Error>> {
     let mut file = File::open(absolute_file_path)?;
     let mut contents = String::new();
