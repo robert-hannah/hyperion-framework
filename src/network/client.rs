@@ -124,8 +124,7 @@ where
                                 // Send message
                                 match stream.write_all(&framed_msg).await {
                                     Ok(_) => {
-                                        // Optional debug
-                                        // log::debug!("Message sent: {message:?}");
+                                        log::trace!("Message sent: {message:?}");
                                     }
                                     Err(e) => {
                                         log::warn!("Failed to send message to {}: {e:?}", self.connection_name);

@@ -78,10 +78,13 @@ where
         .unwrap_or_else(|e| panic!("Failed to load network topology from '{:?}': {}", network_topology_path, e));
 
     // Initialise logger
-    initialise_logger(Some(
-        LevelFilter::from_str(component_config.log_level()).unwrap_or(LevelFilter::Info),
-    ))
-    .unwrap();
+    let log_level: LevelFilter = LevelFilter::from_str(component_config.log_level()).unwrap_or_else(|e| {
+        // Can't use logger here as it doesn't exist yet
+        println!("Log level was not parsed correctly: {e:?}\nDefaulting to 'Trace' log level.");
+        LevelFilter::Trace
+    });
+    initialise_logger(log_level)
+        .unwrap_or_else(|e| panic!("Failed to initialise logger: {e:?}"));
 
     // Initialise console - temporary startup printout
     for (key, value) in component_config.container_identity().iter() {

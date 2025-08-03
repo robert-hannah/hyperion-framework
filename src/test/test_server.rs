@@ -76,7 +76,7 @@ async fn _client_task(id: usize) {
             }
         },
         Err(e) => {
-            log::error!("Jobs fucked: {e:?} ID: {id}");
+            log::error!("Couldn't connect to address: {e:?} ID: {id}");
         }
     }
 
