@@ -42,7 +42,7 @@ Add this to your `Cargo.toml`:
 `hyperion-network = 0.3.2`
 
 
-## [**Example Implementation**](https://github.com/Bazzz-1/hyperion-framework-examples)
+## [**Example Implementation**](https://github.com/robert-hannah/hyperion-framework-examples)
 
 ## [**Documentation**](https://docs.rs/hyperion-framework)
 
@@ -58,13 +58,13 @@ Add this to your `Cargo.toml`:
 
 ## Dependencies
 
-- tokio (1.44.2) - Async runtime
-- serde (1.0.219) - Serialisation framework
-- serde_json (1.0.140) - JSON support
-- serde-xml-rs (0.8.1) - XML support
-- log (0.4.27) - Logging infrastructure
-- colored (3.0.0) - Terminal coloring
 - async-trait (0.1.88) - Async trait support
+- colored (3.0.0) - Terminal coloring
+- log (0.4.27) - Logging infrastructure
+- serde (1.0.219) - Serialisation
+- serde_json (1.0.142) - JSON support
+- serde-xml-rs (0.8.1) - XML support
+- tokio (1.47.1) - Async runtime
 
 ## Contributing
 

@@ -3,12 +3,12 @@ name = "hyperion-framework"
 version = "0.3.2"
 edition = "2024"
 license = "Apache-2.0"
-authors = ["Robert Hannah (https://github.com/Bazzz-1)"]
+authors = ["Robert Hannah (https://github.com/robert-hannah)"]
 description = "A lightweight component-based TCP framework for building service-oriented Rust applications with CLI control, async messaging, and lifecycle management."
 
-repository = "https://github.com/bazzz-1/hyperion-framework"
-homepage = "https://github.com/bazzz-1/hyperion-framework"
-documentation = "https://github.com/Bazzz-1/hyperion-framework-examples"
+repository = "https://github.com/robert-hannah/hyperion-framework"
+homepage = "https://github.com/robert-hannah/hyperion-framework"
+documentation = "https://github.com/robert-hannah/hyperion-framework-examples"
 readme = "README.md"
 keywords = [
     "framework",

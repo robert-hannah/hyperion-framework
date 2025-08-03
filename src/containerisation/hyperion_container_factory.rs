@@ -1,6 +1,6 @@
 // -------------------------------------------------------------------------------------------------
 // Hyperion Framework
-// https://github.com/Bazzz-1/hyperion-framework
+// https://github.com/robert-hannah/hyperion-framework
 //
 // A lightweight component-based TCP framework for building service-oriented Rust applications with
 // CLI control, async messaging, and lifecycle management.
@@ -67,24 +67,39 @@ where
         + Clone
         + Serialize,
 {
-    // Read Component and network configs
+    // Read Component and network configs (program should exit if this fails)
     let config_path: PathBuf = fs::canonicalize(config_path_str)
         .unwrap_or_else(|e| panic!("Could not canonicalize '{}': {}", config_path_str, e));
-    let component_config: StdArc<C> = load_config::load_config::<C>(&config_path)
-        .unwrap_or_else(|e| panic!("Failed to load component config from '{:?}': {}", config_path, e));
+    let component_config: StdArc<C> =
+        load_config::load_config::<C>(&config_path).unwrap_or_else(|e| {
+            panic!(
+                "Failed to load component config from '{:?}': {}",
+                config_path, e
+            )
+        });
     let network_topology_path: PathBuf = fs::canonicalize(network_topology_path_str)
-        .unwrap_or_else(|e| panic!("Could not canonicalize '{}': {}", network_topology_path_str, e));
-    let network_topology: StdArc<NetworkTopology> = load_config::load_config::<NetworkTopology>(&network_topology_path)
-        .unwrap_or_else(|e| panic!("Failed to load network topology from '{:?}': {}", network_topology_path, e));
+        .unwrap_or_else(|e| {
+            panic!(
+                "Could not canonicalize '{}': {}",
+                network_topology_path_str, e
+            )
+        });
+    let network_topology: StdArc<NetworkTopology> =
+        load_config::load_config::<NetworkTopology>(&network_topology_path).unwrap_or_else(|e| {
+            panic!(
+                "Failed to load network topology from '{:?}': {}",
+                network_topology_path, e
+            )
+        });
 
     // Initialise logger
-    let log_level: LevelFilter = LevelFilter::from_str(component_config.log_level()).unwrap_or_else(|e| {
-        // Can't use logger here as it doesn't exist yet
-        println!("Log level was not parsed correctly: {e:?}\nDefaulting to 'Trace' log level.");
-        LevelFilter::Trace
-    });
-    initialise_logger(log_level)
-        .unwrap_or_else(|e| panic!("Failed to initialise logger: {e:?}"));
+    let log_level: LevelFilter = LevelFilter::from_str(component_config.log_level())
+        .unwrap_or_else(|e| {
+            // Can't use logger here as it doesn't exist yet
+            println!("Log level was not parsed correctly: {e:?}\nDefaulting to 'Trace' log level.");
+            LevelFilter::Trace
+        });
+    initialise_logger(log_level).unwrap_or_else(|e| panic!("Failed to initialise logger: {e:?}"));
 
     // Initialise console - temporary startup printout
     for (key, value) in component_config.container_identity().iter() {
