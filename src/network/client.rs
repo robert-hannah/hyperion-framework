@@ -1,6 +1,6 @@
 // -------------------------------------------------------------------------------------------------
 // Hyperion Framework
-// https://github.com/Bazzz-1/hyperion-framework
+// https://github.com/robert-hannah/hyperion-framework
 //
 // A lightweight component-based TCP framework for building service-oriented Rust applications with
 // CLI control, async messaging, and lifecycle management.
@@ -124,8 +124,7 @@ where
                                 // Send message
                                 match stream.write_all(&framed_msg).await {
                                     Ok(_) => {
-                                        // Optional debug
-                                        // log::debug!("Message sent: {message:?}");
+                                        log::trace!("Message sent: {message:?}");
                                     }
                                     Err(e) => {
                                         log::warn!("Failed to send message to {}: {e:?}", self.connection_name);

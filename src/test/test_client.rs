@@ -1,6 +1,6 @@
 // -------------------------------------------------------------------------------------------------
 // Hyperion Framework
-// https://github.com/Bazzz-1/hyperion-framework
+// https://github.com/robert-hannah/hyperion-framework
 //
 // A lightweight component-based TCP framework for building service-oriented Rust applications with
 // CLI control, async messaging, and lifecycle management.
@@ -19,8 +19,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // -------------------------------------------------------------------------------------------------
-// cargo test -- --nocapture
-
 #![allow(unused_imports)]
 
 // Standard

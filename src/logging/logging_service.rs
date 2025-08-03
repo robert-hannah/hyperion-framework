@@ -1,6 +1,6 @@
 // -------------------------------------------------------------------------------------------------
 // Hyperion Framework
-// https://github.com/Bazzz-1/hyperion-framework
+// https://github.com/robert-hannah/hyperion-framework
 //
 // A lightweight component-based TCP framework for building service-oriented Rust applications with
 // CLI control, async messaging, and lifecycle management.
@@ -54,10 +54,9 @@ impl log::Log for LoggingService {
 }
 
 // Function to initialise the logger - not part of the struct
-// Use option so that the log level can be set or left as default
-pub fn initialise_logger(log_level: Option<LevelFilter>) -> Result<(), SetLoggerError> {
+pub fn initialise_logger(log_level: LevelFilter) -> Result<(), SetLoggerError> {
     let logger = LoggingService {
-        min_log_level: log_level.unwrap_or(LevelFilter::Debug),
+        min_log_level: log_level,
     };
 
     // Set the logger as the global logger

@@ -1,6 +1,6 @@
 // -------------------------------------------------------------------------------------------------
 // Hyperion Framework
-// https://github.com/Bazzz-1/hyperion-framework
+// https://github.com/robert-hannah/hyperion-framework
 //
 // A lightweight component-based TCP framework for building service-oriented Rust applications with
 // CLI control, async messaging, and lifecycle management.
@@ -21,5 +21,4 @@
 // -------------------------------------------------------------------------------------------------
 
 pub mod load_config;
-pub mod time_utilities;
 pub mod tx_sender;

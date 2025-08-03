@@ -1,6 +1,6 @@
 // -------------------------------------------------------------------------------------------------
 // Hyperion Framework
-// https://github.com/Bazzz-1/hyperion-framework
+// https://github.com/robert-hannah/hyperion-framework
 //
 // A lightweight component-based TCP framework for building service-oriented Rust applications with
 // CLI control, async messaging, and lifecycle management.
@@ -39,25 +39,32 @@ use crate::utilities::tx_sender::add_to_tx_with_retry;
 
 pub struct ClientBroker<T> {
     messaging_active: bool,
-    // network_topology:           StdArc<NetworkTopology>,        // TODO: Use this to restart connections?
-    client_senders: HashMap<String, mpsc::Sender<T>>, // TODO: Make this not a hash map
+    // network_topology:           StdArc<NetworkTopology>,        // TODO: Use this to restart connections
+    client_senders: HashMap<String, mpsc::Sender<T>>,
     client_threads: JoinSet<()>,
 }
 
 // TODO: Check client state for restart when needed
-// TODO: Actual broker part
 
 impl<T> ClientBroker<T>
 where
     T: Debug + Send + 'static + DeserializeOwned + Sync + Clone + Serialize,
 {
+    /// Initializes the `ClientBroker` with the network topology, container state,
+    /// and state notification mechanism.
+    ///
+    /// # Arguments
+    ///
+    /// * `network_topology` - A reference-counted arc for network connections.
+    /// * `container_state` - Atomic state of the container lifecycle.
+    /// * `container_state_notify` - State notification for component updates.
     pub fn init(
         network_topology: StdArc<NetworkTopology>,
         container_state: StdArc<AtomicUsize>,
         container_state_notify: StdArc<Notify>,
     ) -> Self {
         // Gather connections
-        // This must be cloned as topolgy currently doesn't live that long
+        // Clone topology to prolong life
         let connections: Vec<Connection> = network_topology
             .client_connections
             .client_connection_vec

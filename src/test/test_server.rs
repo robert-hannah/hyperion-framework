@@ -1,6 +1,6 @@
 // -------------------------------------------------------------------------------------------------
 // Hyperion Framework
-// https://github.com/Bazzz-1/hyperion-framework
+// https://github.com/robert-hannah/hyperion-framework
 //
 // A lightweight component-based TCP framework for building service-oriented Rust applications with
 // CLI control, async messaging, and lifecycle management.
@@ -19,9 +19,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // -------------------------------------------------------------------------------------------------
-
-// cargo test -- --nocapture
-
 #![allow(unused_imports)]
 
 // Standard
@@ -29,6 +26,7 @@ use log::debug;
 use std::sync::Arc as StdArc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
+
 // Package
 use serde::{Serialize, de::DeserializeOwned};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -78,7 +76,7 @@ async fn _client_task(id: usize) {
             }
         },
         Err(e) => {
-            log::error!("Jobs fucked: {e:?} ID: {id}");
+            log::error!("Couldn't connect to address: {e:?} ID: {id}");
         }
     }
 

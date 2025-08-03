@@ -1,6 +1,6 @@
 // -------------------------------------------------------------------------------------------------
 // Hyperion Framework
-// https://github.com/Bazzz-1/hyperion-framework
+// https://github.com/robert-hannah/hyperion-framework
 //
 // A lightweight component-based TCP framework for building service-oriented Rust applications with
 // CLI control, async messaging, and lifecycle management.
@@ -31,7 +31,7 @@ use serde::de::DeserializeOwned;
 use serde_xml_rs::from_str;
 
 pub fn load_config<T: DeserializeOwned>(
-    absolute_file_path: PathBuf,
+    absolute_file_path: &PathBuf,
 ) -> Result<StdArc<T>, Box<dyn std::error::Error>> {
     let mut file = File::open(absolute_file_path)?;
     let mut contents = String::new();
