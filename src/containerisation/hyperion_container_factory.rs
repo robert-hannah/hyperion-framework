@@ -54,10 +54,20 @@ pub async fn create<A, C, T>(
     container_state: StdArc<AtomicUsize>,
     container_state_notify: StdArc<Notify>,
     main_rx: mpsc::Receiver<T>,
-) -> HyperionContainer<A, T>
+) -> HyperionContainer<T>
 where
-    A: Initialisable<ConfigType = C> + Run<Message = T> + Send + 'static + Sync + Clone + Debug,
-    C: Debug + Send + 'static + DeserializeOwned + Sync + LogLevel + ContainerIdentidy,
+    A: Initialisable<ConfigType = C> + Run<Message = T>
+        + Send
+        + 'static
+        + Sync
+        + Debug,
+    C: Debug
+        + Send
+        + 'static
+        + DeserializeOwned
+        + Sync
+        + LogLevel
+        + ContainerIdentidy,
     T: HyperionContainerDirectiveMessage
         + Debug
         + Send
@@ -138,7 +148,7 @@ where
     sleep(Duration::from_secs(2)).await;
 
     // Using previous elements, build HyperionContainer
-    HyperionContainer::<A, T>::create(
+    HyperionContainer::<T>::create(
         component_archetype,
         container_state,
         container_state_notify,
