@@ -38,11 +38,7 @@ use tokio::time::{Duration, sleep};
 use crate::containerisation::client_broker::ClientBroker;
 use crate::containerisation::hyperion_container::HyperionContainer;
 use crate::containerisation::traits::{
-    ContainerIdentidy, 
-    HyperionContainerDirectiveMessage, 
-    Initialisable, 
-    LogLevel, 
-    Run
+    ContainerIdentidy, HyperionContainerDirectiveMessage, Initialisable, LogLevel, Run,
 };
 use crate::logging::logging_service::initialise_logger;
 use crate::network::network_topology::NetworkTopology;
@@ -60,18 +56,8 @@ pub async fn create<A, C, T>(
     main_rx: mpsc::Receiver<T>,
 ) -> HyperionContainer<T>
 where
-    A: Initialisable<ConfigType = C> + Run<Message = T>
-        + Send
-        + 'static
-        + Sync
-        + Debug,
-    C: Debug
-        + Send
-        + 'static
-        + DeserializeOwned
-        + Sync
-        + LogLevel
-        + ContainerIdentidy,
+    A: Initialisable<ConfigType = C> + Run<Message = T> + Send + 'static + Sync + Debug,
+    C: Debug + Send + 'static + DeserializeOwned + Sync + LogLevel + ContainerIdentidy,
     T: HyperionContainerDirectiveMessage
         + Debug
         + Send

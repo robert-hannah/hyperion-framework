@@ -28,16 +28,16 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 
 // Package
-use serde::{Serialize, Deserialize, de::DeserializeOwned};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpStream;
-use tokio::task::JoinSet;
-use tokio::time::{Duration, sleep, timeout};
-use tokio::sync::{Notify, mpsc};
 use hyperion_framework::containerisation::container_state::ContainerState;
 use hyperion_framework::messages::container_directive::ContainerDirective;
-use hyperion_framework::network::server::Server;
 use hyperion_framework::network::serialiser::serialise_message;
+use hyperion_framework::network::server::Server;
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpStream;
+use tokio::sync::{Notify, mpsc};
+use tokio::task::JoinSet;
+use tokio::time::{Duration, sleep, timeout};
 
 // Constants
 const _WAIT_TIME: u64 = 3;
@@ -49,17 +49,13 @@ pub enum ContainerMessage {
     ContainerDirectiveMsg(ContainerDirective),
 }
 
-
 // Simulates a client connecting and sending a message
 async fn _client_task(id: usize) {
     // Create a test message
-    let message = ContainerMessage::ContainerDirectiveMsg(
-        ContainerDirective::Heartbeat,
-    );
+    let message = ContainerMessage::ContainerDirectiveMsg(ContainerDirective::Heartbeat);
 
     // Serialize to bytes
-    let payload = serialise_message(&message)
-        .expect("Message serialisation failed");
+    let payload = serialise_message(&message).expect("Message serialisation failed");
 
     // Create 4-byte big-endian length prefix
     let len_prefix = (payload.len() as u32).to_be_bytes();

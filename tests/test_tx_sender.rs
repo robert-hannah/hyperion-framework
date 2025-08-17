@@ -24,10 +24,9 @@
 use std::time::Instant;
 
 // Package
+use hyperion_framework::utilities::tx_sender::add_to_tx_with_retry;
 use tokio::sync::mpsc;
 use tokio::time::Duration;
-use hyperion_framework::utilities::tx_sender::add_to_tx_with_retry;
-
 
 #[tokio::test]
 async fn succeeds_immediately() {
@@ -63,7 +62,11 @@ async fn retries_then_succeeds_after_capacity_frees() {
 
     // Await the sender and check it took at least ~200ms (first backoff 200ms)
     let elapsed = send_task.await.expect("task join");
-    assert!(elapsed >= Duration::from_millis(180), "elapsed: {:?}", elapsed);
+    assert!(
+        elapsed >= Duration::from_millis(180),
+        "elapsed: {:?}",
+        elapsed
+    );
 
     // Now the newly sent value should be available
     let got = rx.recv().await.expect("should receive second value");
@@ -80,5 +83,9 @@ async fn closed_channel_returns_quickly() {
     let elapsed = start.elapsed();
 
     // Should complete quickly (no sleeps on Closed error)
-    assert!(elapsed < Duration::from_millis(50), "elapsed: {:?}", elapsed);
+    assert!(
+        elapsed < Duration::from_millis(50),
+        "elapsed: {:?}",
+        elapsed
+    );
 }

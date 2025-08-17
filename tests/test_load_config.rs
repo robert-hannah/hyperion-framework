@@ -24,8 +24,8 @@
 use std::path::PathBuf;
 
 // Package
-use serde::Deserialize;
 use hyperion_framework::utilities::load_config::load_config;
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize, PartialEq)]
 struct MiniCfg {
@@ -33,15 +33,13 @@ struct MiniCfg {
     version: String,
 }
 
-
 #[test]
 fn loads_valid_xml_into_struct() {
     let tmp_dir = tempfile::tempdir().expect("tmpdir");
     let tmp_path = tmp_dir.path().to_path_buf();
     let file_path: PathBuf = tmp_path.join("mini.xml");
 
-    let xml = 
-        r#"
+    let xml = r#"
         <MiniCfg>
             <name>Hyperion</name>
             <version>1.2.3</version>
@@ -68,8 +66,7 @@ fn returns_error_on_malformed_xml() {
     let file_path: PathBuf = tmp_path.join("bad.xml");
 
     // Missing closing tag
-    let xml = 
-        r#"
+    let xml = r#"
         <MiniCfg>
             <name>x</name>
             <version>y"#;

@@ -74,11 +74,7 @@ where
         server_rx: mpsc::Receiver<T>,
     ) -> Self
     where
-        A: Run<Message = T>
-        + Send
-        + 'static
-        + Sync
-        + Debug
+        A: Run<Message = T> + Send + 'static + Sync + Debug,
     {
         log::info!("Starting Hyperion Container...");
         let (component_in_tx, component_in_rx) = mpsc::channel::<T>(32);
@@ -106,15 +102,13 @@ where
         component_out_tx: mpsc::Sender<ClientBrokerMessage<T>>,
     ) -> task::JoinHandle<()>
     where
-        A: Run<Message = T>
-            + Send
-            + 'static
-            + Sync
-            + Debug
+        A: Run<Message = T> + Send + 'static + Sync + Debug,
     {
         let component_task: task::JoinHandle<()> = {
             task::spawn(async move {
-                component_archetype.run(component_in_rx, component_out_tx).await;
+                component_archetype
+                    .run(component_in_rx, component_out_tx)
+                    .await;
             })
         };
         component_task

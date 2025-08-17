@@ -21,21 +21,27 @@
 // -------------------------------------------------------------------------------------------------
 
 // Standard
-use std::sync::{Arc as StdArc, atomic::{AtomicUsize, Ordering}};
+use std::sync::{
+    Arc as StdArc,
+    atomic::{AtomicUsize, Ordering},
+};
 
 // Package
-use tokio::io::AsyncReadExt;
-use tokio::net::TcpListener;
-use tokio::sync::Notify;
-use tokio::time::{timeout, Duration, sleep};
 use hyperion_framework::containerisation::client_broker::ClientBroker;
 use hyperion_framework::containerisation::container_state::ContainerState;
 use hyperion_framework::messages::client_broker_message::ClientBrokerMessage;
-use hyperion_framework::network::network_topology::{NetworkTopology, ClientConnections, Connection};
-
+use hyperion_framework::network::network_topology::{
+    ClientConnections, Connection, NetworkTopology,
+};
+use tokio::io::AsyncReadExt;
+use tokio::net::TcpListener;
+use tokio::sync::Notify;
+use tokio::time::{Duration, sleep, timeout};
 
 async fn start_test_server() -> (TcpListener, String) {
-    let listener = TcpListener::bind("127.0.0.1:0").await.expect("Bind test server");
+    let listener = TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("Bind test server");
     let addr = listener.local_addr().unwrap();
     (listener, addr.to_string())
 }
@@ -62,18 +68,23 @@ async fn read_two_framed_strings(listener: TcpListener) -> (String, Option<Strin
     // Helper to read one message from an established socket
     async fn read_msg(socket: &mut tokio::net::TcpStream) -> Option<String> {
         let mut len_buf = [0u8; 4];
-        if socket.read_exact(&mut len_buf).await.is_err() { return None; }
+        if socket.read_exact(&mut len_buf).await.is_err() {
+            return None;
+        }
         let len = u32::from_be_bytes(len_buf) as usize;
         let mut payload = vec![0u8; len];
-        if socket.read_exact(&mut payload).await.is_err() { return None; }
+        if socket.read_exact(&mut payload).await.is_err() {
+            return None;
+        }
         Some(serde_json::from_slice::<String>(&payload).expect("Deserialize string"))
     }
 
     let first = read_msg(&mut socket).await.expect("First message");
 
     // Try to read a second message with a short timeout; if none, return None
-    let second =
-        timeout(Duration::from_millis(500), read_msg(&mut socket)).await.unwrap_or_else(|_| None);
+    let second = timeout(Duration::from_millis(500), read_msg(&mut socket))
+        .await
+        .unwrap_or(None);
 
     (first, second)
 }
@@ -83,13 +94,19 @@ fn build_topology_with_client(name: &str, address: String) -> StdArc<NetworkTopo
         container_name: "test-container".to_string(),
         server_address: "127.0.0.1:0".to_string(),
         client_connections: ClientConnections {
-            client_connection_vec: vec![Connection { name: name.to_string(), address }],
+            client_connection_vec: vec![Connection {
+                name: name.to_string(),
+                address,
+            }],
         },
     })
 }
 
 fn new_state_and_notify() -> (StdArc<AtomicUsize>, StdArc<Notify>) {
-    (StdArc::new(AtomicUsize::new(ContainerState::Running as usize)), StdArc::new(Notify::new()))
+    (
+        StdArc::new(AtomicUsize::new(ContainerState::Running as usize)),
+        StdArc::new(Notify::new()),
+    )
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -100,7 +117,8 @@ async fn test_handle_message_forwards_to_correct_client() {
 
     let (container_state, container_notify) = new_state_and_notify();
 
-    let broker = ClientBroker::<String>::init(topology, container_state.clone(), container_notify.clone());
+    let broker =
+        ClientBroker::<String>::init(topology, container_state.clone(), container_notify.clone());
 
     // Allow client time to connect
     sleep(Duration::from_millis(100)).await;
@@ -114,7 +132,10 @@ async fn test_handle_message_forwards_to_correct_client() {
     broker.handle_message(msg).await;
 
     // Assert: server received exactly that string
-    let received = timeout(Duration::from_secs(2), read_task).await.expect("No timeout").expect("Task ok");
+    let received = timeout(Duration::from_secs(2), read_task)
+        .await
+        .expect("No timeout")
+        .expect("Task ok");
     assert_eq!(received, "Beta");
 
     // Shutdown cleanly
@@ -132,7 +153,8 @@ async fn test_forward_shutdown_blocks_future_messages() {
     let topology = build_topology_with_client("Alpha", addr.clone());
     let (container_state, container_notify) = new_state_and_notify();
 
-    let mut broker = ClientBroker::<String>::init(topology, container_state.clone(), container_notify.clone());
+    let mut broker =
+        ClientBroker::<String>::init(topology, container_state.clone(), container_notify.clone());
 
     // Allow client to connect
     sleep(Duration::from_millis(100)).await;
@@ -147,10 +169,16 @@ async fn test_forward_shutdown_blocks_future_messages() {
     let later = ClientBrokerMessage::new(vec!["Alpha"], "Charlie".to_string());
     broker.handle_message(later).await;
 
-    let (first, second) =
-        timeout(Duration::from_secs(3), read_task).await.expect("No timeout").expect("Task ok");
+    let (first, second) = timeout(Duration::from_secs(3), read_task)
+        .await
+        .expect("No timeout")
+        .expect("Task ok");
     assert_eq!(first, "Beta");
-    assert!(second.is_none(), "Expected no second message after forward_shutdown, got: {:?}", second);
+    assert!(
+        second.is_none(),
+        "Expected no second message after forward_shutdown, got: {:?}",
+        second
+    );
 
     // Shutdown clients
     container_state.store(ContainerState::ShuttingDown as usize, Ordering::SeqCst);
@@ -164,7 +192,9 @@ async fn test_unknown_target_does_not_panic() {
     let topology = StdArc::new(NetworkTopology {
         container_name: "test".to_string(),
         server_address: "127.0.0.1:0".to_string(),
-        client_connections: ClientConnections { client_connection_vec: vec![] },
+        client_connections: ClientConnections {
+            client_connection_vec: vec![],
+        },
     });
 
     let (container_state, container_notify) = new_state_and_notify();
@@ -172,7 +202,9 @@ async fn test_unknown_target_does_not_panic() {
     let broker = ClientBroker::<String>::init(topology, container_state, container_notify);
 
     // Should not panic even though target is unknown
-    broker.handle_message(ClientBrokerMessage::new(vec!["Ghost"], "Msg".to_string())).await;
+    broker
+        .handle_message(ClientBrokerMessage::new(vec!["Ghost"], "Msg".to_string()))
+        .await;
 
     // No clients to shutdown; ensure Drop path is fine by creating mutable to call shutdown
     let mut broker = broker;

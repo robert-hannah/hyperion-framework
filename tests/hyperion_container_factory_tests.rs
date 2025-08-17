@@ -24,27 +24,22 @@
 use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::path::{Path, PathBuf};
 use std::sync::Arc as StdArc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 // Package
-use serde::Deserialize;
-use tokio::sync::{mpsc, Notify};
-use tokio::time::{sleep, Duration};
 use hyperion_framework::containerisation::container_state::ContainerState;
 use hyperion_framework::containerisation::hyperion_container::HyperionContainer;
 use hyperion_framework::containerisation::hyperion_container_factory;
 use hyperion_framework::containerisation::traits::{
-    ContainerIdentidy,
-    HyperionContainerDirectiveMessage,
-    Initialisable,
-    LogLevel,
-    Run
+    ContainerIdentidy, HyperionContainerDirectiveMessage, Initialisable, LogLevel, Run,
 };
 use hyperion_framework::messages::client_broker_message::ClientBrokerMessage;
 use hyperion_framework::messages::container_directive::ContainerDirective;
-
+use serde::Deserialize;
+use tokio::sync::{Notify, mpsc};
+use tokio::time::{Duration, sleep};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 enum TestMessage {
@@ -54,7 +49,11 @@ enum TestMessage {
 
 impl HyperionContainerDirectiveMessage for TestMessage {
     fn get_container_directive_message(&self) -> Option<&ContainerDirective> {
-        if let TestMessage::Framework(d) = self { Some(d) } else { None }
+        if let TestMessage::Framework(d) = self {
+            Some(d)
+        } else {
+            None
+        }
     }
 }
 
@@ -64,23 +63,40 @@ struct DummyComponent;
 #[async_trait::async_trait]
 impl Run for DummyComponent {
     type Message = TestMessage;
-    async fn run(self, mut comp_in_rx: mpsc::Receiver<Self::Message>, _comp_out_tx: mpsc::Sender<ClientBrokerMessage<Self::Message>>) {
+    async fn run(
+        self,
+        mut comp_in_rx: mpsc::Receiver<Self::Message>,
+        _comp_out_tx: mpsc::Sender<ClientBrokerMessage<Self::Message>>,
+    ) {
         // Exit on Shutdown; ignore other messages
         while let Some(msg) = comp_in_rx.recv().await {
-            if let TestMessage::Framework(ContainerDirective::Shutdown) = msg { break; }
+            if let TestMessage::Framework(ContainerDirective::Shutdown) = msg {
+                break;
+            }
         }
     }
 }
 
 #[derive(Debug, Deserialize)]
-struct DummyLogging { level: String }
+struct DummyLogging {
+    level: String,
+}
 #[derive(Debug, Deserialize)]
-struct DummyContainer { name: String }
+struct DummyContainer {
+    name: String,
+}
 
 #[derive(Debug, Deserialize)]
-struct DummyConfig { logging: DummyLogging, container: DummyContainer }
+struct DummyConfig {
+    logging: DummyLogging,
+    container: DummyContainer,
+}
 
-impl LogLevel for DummyConfig { fn log_level(&self) -> &str { &self.logging.level } }
+impl LogLevel for DummyConfig {
+    fn log_level(&self) -> &str {
+        &self.logging.level
+    }
+}
 impl ContainerIdentidy for DummyConfig {
     fn container_identity(&self) -> HashMap<String, String> {
         let mut id = HashMap::new();
@@ -94,11 +110,13 @@ impl Initialisable for DummyComponent {
     fn initialise(
         _container_state: StdArc<AtomicUsize>,
         _container_state_notify: StdArc<Notify>,
-        _config: StdArc<Self::ConfigType>
-    ) -> Self { DummyComponent }
+        _config: StdArc<Self::ConfigType>,
+    ) -> Self {
+        DummyComponent
+    }
 }
 
-fn write_temp_file(dir: &PathBuf, name: &str, contents: &str) -> PathBuf {
+fn write_temp_file(dir: &Path, name: &str, contents: &str) -> PathBuf {
     let path = dir.join(name);
     let mut f = fs::File::create(&path).expect("Create temp file");
     f.write_all(contents.as_bytes()).expect("Write temp file");
@@ -111,8 +129,7 @@ async fn factory_create_builds_and_runs_container() {
     let tmp_dir = tempfile::tempdir().expect("tmpdir");
     let tmp_path = tmp_dir.path().to_path_buf();
 
-    let config_xml =
-        r#"
+    let config_xml = r#"
         <DummyConfig>
             <logging>
                 <level>Trace</level>
@@ -124,8 +141,7 @@ async fn factory_create_builds_and_runs_container() {
         "#;
 
     // No client connections, server binds to ephemeral port 0
-    let network_xml =
-        r#"
+    let network_xml = r#"
         <NetworkTopology>
             <container_name>TestContainer</container_name>
             <server_address>127.0.0.1:0</server_address>
@@ -141,18 +157,21 @@ async fn factory_create_builds_and_runs_container() {
     let config_path = write_temp_file(&tmp_path, "config.xml", config_xml);
     let topology_path = write_temp_file(&tmp_path, "network.xml", network_xml);
 
-    let container_state: StdArc<AtomicUsize> = StdArc::new(AtomicUsize::new(ContainerState::Running as usize));
+    let container_state: StdArc<AtomicUsize> =
+        StdArc::new(AtomicUsize::new(ContainerState::Running as usize));
     let container_state_notify: StdArc<Notify> = StdArc::new(Notify::new());
 
     let (main_tx, main_rx) = mpsc::channel::<TestMessage>(32);
 
-    let mut container: HyperionContainer<TestMessage> = hyperion_container_factory::create::<DummyComponent, DummyConfig, TestMessage>(
-        config_path.to_str().unwrap(),
-        topology_path.to_str().unwrap(),
-        container_state.clone(),
-        container_state_notify.clone(),
-        main_rx,
-    ).await;
+    let mut container: HyperionContainer<TestMessage> =
+        hyperion_container_factory::create::<DummyComponent, DummyConfig, TestMessage>(
+            config_path.to_str().unwrap(),
+            topology_path.to_str().unwrap(),
+            container_state.clone(),
+            container_state_notify.clone(),
+            main_rx,
+        )
+        .await;
 
     // Run container
     tokio::spawn(async move {
@@ -161,13 +180,20 @@ async fn factory_create_builds_and_runs_container() {
 
     // Give server and container some time, then shutdown
     sleep(Duration::from_millis(200)).await;
-    main_tx.send(TestMessage::Framework(ContainerDirective::Shutdown)).await.unwrap();
+    main_tx
+        .send(TestMessage::Framework(ContainerDirective::Shutdown))
+        .await
+        .unwrap();
 
     // Wait for Closed
     let deadline = tokio::time::Instant::now() + Duration::from_secs(6);
     loop {
-        if container_state.load(Ordering::SeqCst) == ContainerState::Closed as usize { break; }
-        if tokio::time::Instant::now() > deadline { panic!("Timed out waiting for container to close via factory"); }
+        if container_state.load(Ordering::SeqCst) == ContainerState::Closed as usize {
+            break;
+        }
+        if tokio::time::Instant::now() > deadline {
+            panic!("Timed out waiting for container to close via factory");
+        }
         sleep(Duration::from_millis(50)).await;
     }
 }
