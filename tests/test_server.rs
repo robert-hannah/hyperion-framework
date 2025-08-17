@@ -28,34 +28,34 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 
 // Package
-use serde::{Serialize, de::DeserializeOwned};
+use hyperion_framework::containerisation::container_state::ContainerState;
+use hyperion_framework::messages::container_directive::ContainerDirective;
+use hyperion_framework::network::serialiser::serialise_message;
+use hyperion_framework::network::server::Server;
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
+use tokio::sync::{Notify, mpsc};
 use tokio::task::JoinSet;
-use tokio::time::{Duration, sleep};
-use tokio::{
-    sync::{Notify, mpsc},
-    time::timeout,
-};
-
-// Local
-use crate::containerisation::container_state::ContainerState;
-use crate::network::server::Server;
-use crate::test::mock_container_message::ContainerMessage;
+use tokio::time::{Duration, sleep, timeout};
 
 // Constants
 const _WAIT_TIME: u64 = 3;
 
+// This will be the message that is sent between containers
+// Container directive is essential for Hyperion to work
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum ContainerMessage {
+    ContainerDirectiveMsg(ContainerDirective),
+}
+
 // Simulates a client connecting and sending a message
 async fn _client_task(id: usize) {
     // Create a test message
-    let message = ContainerMessage::ContainerDirectiveMsg(
-        crate::messages::container_directive::ContainerDirective::Heartbeat,
-    );
+    let message = ContainerMessage::ContainerDirectiveMsg(ContainerDirective::Heartbeat);
 
     // Serialize to bytes
-    let payload = crate::network::serialiser::serialise_message(&message)
-        .expect("Message serialisation failed");
+    let payload = serialise_message(&message).expect("Message serialisation failed");
 
     // Create 4-byte big-endian length prefix
     let len_prefix = (payload.len() as u32).to_be_bytes();
@@ -104,7 +104,7 @@ async fn test_server_high_loading() {
     });
 
     // Wait a moment to ensure the server is ready before clients connect
-    tokio::time::sleep(Duration::from_secs(_WAIT_TIME)).await;
+    sleep(Duration::from_secs(_WAIT_TIME)).await;
 
     let mut handles = Vec::new();
     let start_time = Instant::now();
@@ -118,7 +118,7 @@ async fn test_server_high_loading() {
     }
 
     // Wait a moment to ensure all clients have sent messages
-    tokio::time::sleep(Duration::from_secs(_WAIT_TIME)).await;
+    sleep(Duration::from_secs(_WAIT_TIME)).await;
 
     let duration = start_time.elapsed();
     log::debug!("Server strain test completed in {duration:?}");
@@ -150,7 +150,7 @@ async fn test_server_shutdown_command() {
     });
 
     // Wait for the server to start (use Notify instead of sleep)
-    tokio::time::sleep(Duration::from_millis(_WAIT_TIME)).await; // Only to give some startup time
+    sleep(Duration::from_millis(_WAIT_TIME)).await; // Only to give some startup time
 
     // Send a shutdown command to the server
     container_state_clone.store(ContainerState::ShuttingDown as usize, Ordering::SeqCst);
@@ -161,7 +161,7 @@ async fn test_server_shutdown_command() {
         if container_state_clone.load(Ordering::SeqCst) == ContainerState::ShuttingDown as usize {
             break;
         }
-        tokio::time::sleep(Duration::from_millis(_WAIT_TIME)).await;
+        sleep(Duration::from_millis(_WAIT_TIME)).await;
     }
 
     // Assert that the server has shut down
@@ -199,7 +199,7 @@ async fn test_server_does_not_blow_up_on_invalid_message_deserialisation() {
     });
 
     // Wait for the server to start
-    tokio::time::sleep(Duration::from_millis(_WAIT_TIME)).await;
+    sleep(Duration::from_millis(_WAIT_TIME)).await;
 
     // Send an invalid message
     let invalid_bytes = vec![0xFF, 0xFF, 0xFF, 0xFF];
@@ -208,7 +208,7 @@ async fn test_server_does_not_blow_up_on_invalid_message_deserialisation() {
     }
 
     // Give the server time to process the invalid message
-    tokio::time::sleep(Duration::from_millis(_WAIT_TIME)).await;
+    sleep(Duration::from_millis(_WAIT_TIME)).await;
 
     // If the server did not panic or crash, the test passes
     assert_eq!(

@@ -42,8 +42,7 @@ use crate::utilities::tx_sender::add_to_tx_with_retry;
 // A is the HyperionContainer Component template - must implement Initialisable and Run traits
 // T is the primary message type
 #[allow(dead_code)]
-pub struct HyperionContainer<A, T> {
-    component_archetype: A, // Can be used to restart the component task
+pub struct HyperionContainer<T> {
     component_handle: task::JoinHandle<()>,
     container_state: StdArc<AtomicUsize>,
     container_state_notify: StdArc<Notify>,
@@ -54,10 +53,8 @@ pub struct HyperionContainer<A, T> {
     server_rx: mpsc::Receiver<T>,
 }
 
-// TODO: Implementations need separated out as not all implement all template types
-impl<A, T> HyperionContainer<A, T>
+impl<T> HyperionContainer<T>
 where
-    A: Run<Message = T> + Send + 'static + Sync + Clone + Debug,
     T: HyperionContainerDirectiveMessage
         + Debug
         + Send
@@ -67,24 +64,27 @@ where
         + Clone
         + Serialize,
 {
-    pub fn create(
+    pub fn create<A>(
+        // TODO: Use component_archetype for component restart? Can we store a clean one inside the container without enforcing clone?
         component_archetype: A,
         container_state: StdArc<AtomicUsize>,
         container_state_notify: StdArc<Notify>,
         client_broker: ClientBroker<T>,
         main_rx: mpsc::Receiver<T>,
         server_rx: mpsc::Receiver<T>,
-    ) -> Self {
+    ) -> Self
+    where
+        A: Run<Message = T> + Send + 'static + Sync + Debug,
+    {
         log::info!("Starting Hyperion Container...");
         let (component_in_tx, component_in_rx) = mpsc::channel::<T>(32);
         let (component_out_tx, component_out_rx) = mpsc::channel::<ClientBrokerMessage<T>>(32);
         let component_handle: task::JoinHandle<()> = HyperionContainer::start_component(
-            component_archetype.clone(),
+            component_archetype,
             component_in_rx,
             component_out_tx,
         );
         Self {
-            component_archetype,
             component_handle,
             container_state,
             container_state_notify,
@@ -96,15 +96,19 @@ where
         }
     }
 
-    fn start_component(
+    fn start_component<A>(
         component_archetype: A,
         component_in_rx: mpsc::Receiver<T>,
         component_out_tx: mpsc::Sender<ClientBrokerMessage<T>>,
-    ) -> task::JoinHandle<()> {
-        let component = component_archetype.clone();
+    ) -> task::JoinHandle<()>
+    where
+        A: Run<Message = T> + Send + 'static + Sync + Debug,
+    {
         let component_task: task::JoinHandle<()> = {
             task::spawn(async move {
-                component.run(component_in_rx, component_out_tx).await;
+                component_archetype
+                    .run(component_in_rx, component_out_tx)
+                    .await;
             })
         };
         component_task
