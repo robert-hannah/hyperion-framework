@@ -39,15 +39,16 @@ impl log::Log for LoggingService {
         if self.enabled(record.metadata()) {
             let level = match record.level() {
                 Level::Error => format!("{:<5}", "ERROR").red(),
-                Level::Warn  => format!("{:<5}", "WARN").yellow(),
-                Level::Info  => format!("{:<5}", "INFO").green(),
+                Level::Warn => format!("{:<5}", "WARN").yellow(),
+                Level::Info => format!("{:<5}", "INFO").green(),
                 Level::Debug => format!("{:<5}", "DEBUG").bright_cyan(),
                 Level::Trace => format!("{:<5}", "TRACE").blue(),
             };
 
             let timestamp = Utc::now().format("%Y-%m-%d %H:%M:%S");
 
-            let module = record.module_path()
+            let module = record
+                .module_path()
                 .and_then(|m| m.split("::").last())
                 .unwrap_or("unknown");
 
