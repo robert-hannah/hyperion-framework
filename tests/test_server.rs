@@ -107,7 +107,9 @@ async fn test_server_high_loading() {
 
     for i in 0..client_count {
         let addr_clone = addr.clone();
-        handles.push(tokio::spawn(async move { _client_task(i, addr_clone).await }));
+        handles.push(tokio::spawn(
+            async move { _client_task(i, addr_clone).await },
+        ));
     }
 
     for handle in handles {
@@ -120,7 +122,11 @@ async fn test_server_high_loading() {
     let duration = start_time.elapsed();
     log::debug!("Server strain test completed in {duration:?}");
 
-    assert_eq!(rx.len(), client_count, "Some messages were not received by the server");
+    assert_eq!(
+        rx.len(),
+        client_count,
+        "Some messages were not received by the server"
+    );
 
     container_state.store(ContainerState::ShuttingDown as usize, Ordering::SeqCst);
     container_state_notify.notify_waiters();
@@ -154,7 +160,10 @@ async fn test_server_shutdown_command() {
     container_state_notify.notify_waiters();
 
     // The server task should exit cleanly.
-    assert!(server_handle.await.is_ok(), "Server task did not terminate cleanly");
+    assert!(
+        server_handle.await.is_ok(),
+        "Server task did not terminate cleanly"
+    );
 }
 
 #[tokio::test]
