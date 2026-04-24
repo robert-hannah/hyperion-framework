@@ -21,6 +21,7 @@
 // -------------------------------------------------------------------------------------------------
 
 // Package
+use chrono::Utc;
 use colored::*;
 use log::{Level, LevelFilter, Metadata, Record, SetLoggerError};
 
@@ -37,16 +38,20 @@ impl log::Log for LoggingService {
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
             let level = match record.level() {
-                Level::Error => "ERROR".red(),
-                Level::Warn => "WARN".yellow(),
-                Level::Info => "INFO".green(),
-                Level::Debug => "DEBUG".bright_cyan(),
-                Level::Trace => "TRACE".blue(),
+                Level::Error => format!("{:<5}", "ERROR").red(),
+                Level::Warn  => format!("{:<5}", "WARN").yellow(),
+                Level::Info  => format!("{:<5}", "INFO").green(),
+                Level::Debug => format!("{:<5}", "DEBUG").bright_cyan(),
+                Level::Trace => format!("{:<5}", "TRACE").blue(),
             };
 
-            // Create the log message
-            let log_message = format!("{} - {}", level, record.args());
-            println!("{log_message}");
+            let timestamp = Utc::now().format("%Y-%m-%d %H:%M:%S");
+
+            let module = record.module_path()
+                .and_then(|m| m.split("::").last())
+                .unwrap_or("unknown");
+
+            println!("[{timestamp}] {level} {module:<20} - {}", record.args());
         }
     }
 
