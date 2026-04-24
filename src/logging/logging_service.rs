@@ -70,3 +70,136 @@ pub fn initialise_logger(log_level: LevelFilter) -> Result<(), SetLoggerError> {
     log::set_boxed_logger(Box::new(logger))?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use log::{Level, Log};
+
+    fn make_service(level: LevelFilter) -> LoggingService {
+        LoggingService {
+            min_log_level: level,
+        }
+    }
+
+    #[test]
+    fn enabled_passes_at_or_above_min_level() {
+        let svc = make_service(LevelFilter::Info);
+        assert!(
+            svc.enabled(
+                &log::Metadata::builder()
+                    .level(Level::Error)
+                    .target("t")
+                    .build()
+            )
+        );
+        assert!(
+            svc.enabled(
+                &log::Metadata::builder()
+                    .level(Level::Warn)
+                    .target("t")
+                    .build()
+            )
+        );
+        assert!(
+            svc.enabled(
+                &log::Metadata::builder()
+                    .level(Level::Info)
+                    .target("t")
+                    .build()
+            )
+        );
+    }
+
+    #[test]
+    fn enabled_filters_below_min_level() {
+        let svc = make_service(LevelFilter::Info);
+        assert!(
+            !svc.enabled(
+                &log::Metadata::builder()
+                    .level(Level::Debug)
+                    .target("t")
+                    .build()
+            )
+        );
+        assert!(
+            !svc.enabled(
+                &log::Metadata::builder()
+                    .level(Level::Trace)
+                    .target("t")
+                    .build()
+            )
+        );
+    }
+
+    #[test]
+    fn log_does_not_panic_for_all_levels() {
+        let svc = make_service(LevelFilter::Trace);
+        // format_args! temporaries must be inlined — they cannot be stored in a let binding.
+        svc.log(
+            &log::Record::builder()
+                .level(Level::Error)
+                .target("t")
+                .module_path(Some("test::module"))
+                .args(format_args!("error message"))
+                .build(),
+        );
+        svc.log(
+            &log::Record::builder()
+                .level(Level::Warn)
+                .target("t")
+                .module_path(Some("test::module"))
+                .args(format_args!("warn message"))
+                .build(),
+        );
+        svc.log(
+            &log::Record::builder()
+                .level(Level::Info)
+                .target("t")
+                .module_path(Some("test::module"))
+                .args(format_args!("info message"))
+                .build(),
+        );
+        svc.log(
+            &log::Record::builder()
+                .level(Level::Debug)
+                .target("t")
+                .module_path(Some("test::module"))
+                .args(format_args!("debug message"))
+                .build(),
+        );
+        svc.log(
+            &log::Record::builder()
+                .level(Level::Trace)
+                .target("t")
+                .module_path(Some("test::module"))
+                .args(format_args!("trace message"))
+                .build(),
+        );
+    }
+
+    #[test]
+    fn log_silently_skips_filtered_levels() {
+        let svc = make_service(LevelFilter::Error);
+        svc.log(
+            &log::Record::builder()
+                .level(Level::Trace)
+                .target("t")
+                .args(format_args!("should be skipped"))
+                .build(),
+        ); // Must not panic
+    }
+
+    #[test]
+    fn log_handles_missing_module_path() {
+        let svc = make_service(LevelFilter::Trace);
+        svc.log(
+            &log::Record::builder()
+                .level(Level::Info)
+                .target("t")
+                .module_path(None)
+                .args(format_args!("no module path"))
+                .build(),
+        ); // Should fall back to "unknown"
+    }
+}
