@@ -11,6 +11,7 @@ A lightweight component-based TCP framework for building service-oriented Rust a
 - 🔄 **State Management**: Robust component state handling and lifecycle management
 - 📦 **Containerisation**: Simplified component containment and management
 - 🚀 **Async Support**: Built on tokio for high-performance async operations
+- 🪵 **Structured Logging**: Coloured, timestamped log output with module-level source context
 
 ## Hyperion Overview
 Hyperion is designed around a component-based architecture, allowing you to create modular services that communicate over TCP. Each component is encapsulated in a `HyperionContainer`, which manages its lifecycle, configuration, and state.
@@ -39,7 +40,7 @@ Hyperion is also built on top of the Tokio async runtime, enabling high-performa
 
 Add this to your `Cargo.toml`:
 
-`hyperion-network = 0.4.0`
+`hyperion-framework = "0.4.2"`
 
 
 ## [**Example Implementation**](https://github.com/robert-hannah/hyperion-framework-examples)
@@ -47,18 +48,41 @@ Add this to your `Cargo.toml`:
 ## [**Documentation**](https://docs.rs/hyperion-framework)
 
 
+## Logging
+
+Hyperion uses the [`log`](https://docs.rs/log) facade, so any `log`-compatible backend can be plugged in. The built-in `LoggingService` provides coloured, structured output and is initialised once at startup:
+
+```rust
+use hyperion_framework::logging::logging_service::initialise_logger;
+use log::LevelFilter;
+
+initialise_logger(LevelFilter::Debug).expect("Failed to initialise logger");
+```
+
+Each log line includes a UTC timestamp, a fixed-width coloured level badge, and the emitting module name:
+
+```
+[2026-04-24 14:32:01] INFO  hyperion_container   - Hyperion Container is running!
+[2026-04-24 14:32:01] DEBUG server               - Accepted connection from 127.0.0.1:58421
+[2026-04-24 14:32:01] WARN  client               - Failed to send message to DataOrchestrator
+[2026-04-24 14:32:01] ERROR client_broker        - Client encountered an error: connection reset
+```
+
+Because the logger is global, any crate that depends on `hyperion-framework` and calls standard `log::info!(...)` macros will automatically produce output in the same format.
+
 
 ## Project Structure
 
 - `network/`: TCP communication and networking components
 - `messages/`: Message definitions and component directives
 - `utilities/`: Common utilities and helper functions
-- `data_management/`: Data handling and persistence
 - `containerisation/`: Component lifecycle and state management
+- `logging/`: Structured log initialisation and formatting
 
 ## Dependencies
 
 - async-trait (0.1.88) - Async trait support
+- chrono (0.4) - UTC timestamps in log output
 - colored (3.0.0) - Terminal coloring
 - log (0.4.27) - Logging infrastructure
 - serde (1.0.219) - Serialisation
@@ -75,7 +99,7 @@ Contributions are welcome! Please feel free to submit a PR with a comprehensive 
 - Manually retry connections if the connection retry cap is reached
 - Improved container startup boilerplate
 - Generally improve unit and integration test coverage
-- Component restart on failure (automatic and ClI induced)
+- Component restart on failure (automatic and CLI induced)
 
 ## License
 
