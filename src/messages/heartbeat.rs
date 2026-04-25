@@ -20,6 +20,25 @@
 // limitations under the License.
 // -------------------------------------------------------------------------------------------------
 
-pub mod load_config;
-pub mod time;
-pub mod tx_sender;
+/// Enriched form of a HeartbeatRequest, assembled by the container before handing off to the
+/// receiver task. Includes component health data that only the container can observe.
+#[derive(Debug, Clone)]
+pub struct HeartbeatRequest {
+    pub request_id: u64,
+    pub sender_name: String,
+    pub timestamp_ms: u64,
+    pub component_alive: bool,
+    pub ms_since_last_activity: u64,
+    pub container_state_val: usize,
+}
+
+/// Parsed form of a HeartbeatResponse, forwarded by the container to the sender task.
+#[derive(Debug, Clone)]
+pub struct HeartbeatResponse {
+    pub request_id: u64,
+    pub responder_name: String,
+    pub timestamp_ms: u64,
+    pub component_alive: bool,
+    pub ms_since_last_activity: u64,
+    pub container_state_val: usize,
+}

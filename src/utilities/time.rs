@@ -20,6 +20,22 @@
 // limitations under the License.
 // -------------------------------------------------------------------------------------------------
 
-pub mod load_config;
-pub mod time;
-pub mod tx_sender;
+// Standard
+use std::time::{SystemTime, UNIX_EPOCH};
+
+pub fn current_epoch_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
+}
+
+pub fn fmt_ms(ms: u128) -> String {
+    if ms < 1_000 {
+        format!("{}ms", ms)
+    } else if ms < 60_000 {
+        format!("{:.1}s", ms as f64 / 1000.0)
+    } else {
+        format!("{}m {:.0}s", ms / 60_000, (ms % 60_000) as f64 / 1000.0)
+    }
+}

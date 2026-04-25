@@ -23,17 +23,26 @@
 // Package
 use serde::{Deserialize, Serialize};
 
-// Local
-use crate::containerisation::container_state::ContainerState;
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ContainerDirective {
-    // IMPLEMENTED
     Shutdown,       // Shutdown local container
     SystemShutdown, // Shutdown command that is propagated through the container network
+    HeartbeatRequest {
+        // Request heartbeat from a named component
+        request_id: u64,
+        sender_name: String,
+        timestamp_ms: u64,
+    },
+    HeartbeatResponse {
+        // Response to a heartbeat request
+        request_id: u64,
+        responder_name: String,
+        timestamp_ms: u64,
+        component_alive: bool,
+        ms_since_last_activity: u64,
+        container_state_val: usize,
+    },
+
     // TO BE IMPLEMENTED
-    RetryAllConnections,           // Retries any broken connections
-    Heartbeat,                     // Container heartbeat
-    FriendStateRequest,            // Request the state of a friend container
-    StateResponse(ContainerState), // Response to a container state request
+    RetryAllConnections, // Retries any broken connections
 }

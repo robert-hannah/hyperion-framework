@@ -31,8 +31,10 @@ use tokio::sync::Notify;
 use tokio::sync::mpsc::{Receiver, Sender};
 
 // Local
+use crate::heartbeat::config::HeartbeatConfig;
 use crate::messages::client_broker_message::ClientBrokerMessage;
 use crate::messages::container_directive::ContainerDirective;
+use crate::messages::heartbeat::{HeartbeatRequest, HeartbeatResponse};
 
 // Traits
 pub trait Initialisable {
@@ -130,9 +132,39 @@ pub trait ContainerIdentidy {
 pub trait LogLevel {
     fn log_level(&self) -> &str;
 }
+
+/// Provides heartbeat configuration from a component's parsed XML config.
+/// Implement this on your top-level `Config` struct. Return `None` to disable heartbeats.
+pub trait HeartbeatConfigProvider {
+    fn heartbeat_config(&self) -> Option<HeartbeatConfig>;
+}
 // For example,
 // impl LogLevel for Config {
 //     fn log_level(&self) -> &str {
 //         &self.logging.level
 //     }
 // }
+
+/// Allows the container infrastructure to construct and parse heartbeat messages from the
+/// application's message type `T` without knowing what `T` is.
+/// Implement this on your top-level message enum (e.g. `ContainerMessage`).
+pub trait HyperionHeartbeatMessage {
+    fn as_heartbeat_request(&self) -> Option<HeartbeatRequest>;
+    fn as_heartbeat_response(&self) -> Option<HeartbeatResponse>;
+    fn make_heartbeat_request(
+        request_id: u64,
+        sender_name: String,
+        timestamp_ms: u64,
+    ) -> Option<Self>
+    where
+        Self: Sized;
+    fn make_heartbeat_response(
+        request_id: u64,
+        timestamp_ms: u64,
+        component_alive: bool,
+        ms_since_last_activity: u64,
+        container_state_val: usize,
+    ) -> Option<Self>
+    where
+        Self: Sized;
+}

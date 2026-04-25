@@ -53,8 +53,8 @@ async fn ephemeral_addr() -> String {
 
 /// Simulate a client connecting to `address` and sending one framed ContainerDirective message.
 async fn _client_task(id: usize, address: String) {
-    let message = ContainerMessage::ContainerDirectiveMsg(ContainerDirective::Heartbeat);
-    let payload = serialise_message(&message).expect("serialise");
+    let message = ContainerMessage::ContainerDirectiveMsg(ContainerDirective::RetryAllConnections);
+    let payload = serialise_message(&message).expect("Message serialisation failed");
     let len_prefix = (payload.len() as u32).to_be_bytes();
     let mut framed = Vec::with_capacity(4 + payload.len());
     framed.extend_from_slice(&len_prefix);

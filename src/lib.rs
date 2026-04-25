@@ -21,6 +21,7 @@
 // -------------------------------------------------------------------------------------------------
 
 pub mod containerisation;
+pub mod heartbeat;
 pub mod logging;
 pub mod messages;
 pub mod network;

@@ -23,3 +23,4 @@
 pub mod client_broker_message;
 pub mod component_directive;
 pub mod container_directive;
+pub mod heartbeat;
