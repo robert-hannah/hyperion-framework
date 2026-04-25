@@ -36,13 +36,12 @@ use crate::heartbeat::handler::HeartbeatTimeoutHandler;
 use crate::messages::heartbeat::HeartbeatRequest;
 use crate::utilities::time::current_epoch_ms;
 
-
 pub struct HeartbeatReceiver<T> {
     timeout_ms: u64,
     last_received_ms: Arc<AtomicU64>,
     request_rx: mpsc::Receiver<HeartbeatRequest>,
-    all_senders: HashMap<String, mpsc::Sender<T>>,  // Copy of client map from ClientBroker
-    handler: Box<dyn HeartbeatTimeoutHandler>
+    all_senders: HashMap<String, mpsc::Sender<T>>, // Copy of client map from ClientBroker
+    handler: Box<dyn HeartbeatTimeoutHandler>,
 }
 
 impl<T> HeartbeatReceiver<T>
@@ -54,7 +53,7 @@ where
     pub fn new(
         timeout_ms: u64,
         all_senders: HashMap<String, mpsc::Sender<T>>,
-        handler: Box<dyn HeartbeatTimeoutHandler>
+        handler: Box<dyn HeartbeatTimeoutHandler>,
     ) -> (Self, mpsc::Sender<HeartbeatRequest>) {
         let (request_tx, request_rx) = mpsc::channel(32);
         (
@@ -63,9 +62,9 @@ where
                 last_received_ms: Arc::new(AtomicU64::new(current_epoch_ms())),
                 request_rx,
                 all_senders,
-                handler
+                handler,
             },
-            request_tx
+            request_tx,
         )
     }
 

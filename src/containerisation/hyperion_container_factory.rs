@@ -38,13 +38,8 @@ use tokio::time::{Duration, sleep};
 use crate::containerisation::client_broker::ClientBroker;
 use crate::containerisation::hyperion_container::HyperionContainer;
 use crate::containerisation::traits::{
-    ContainerIdentidy,
-    HeartbeatConfigProvider,
-    HyperionContainerDirectiveMessage,
-    HyperionHeartbeatMessage,
-    Initialisable,
-    LogLevel,
-    Run
+    ContainerIdentidy, HeartbeatConfigProvider, HyperionContainerDirectiveMessage,
+    HyperionHeartbeatMessage, Initialisable, LogLevel, Run,
 };
 use crate::heartbeat::handler::{HeartbeatMissedHandler, HeartbeatTimeoutHandler};
 use crate::logging::logging_service::initialise_logger;
@@ -66,7 +61,14 @@ pub async fn create<A, C, T>(
 ) -> HyperionContainer<T>
 where
     A: Initialisable<ConfigType = C> + Run<Message = T> + Send + 'static + Sync + Debug,
-    C: Debug + Send + 'static + DeserializeOwned + Sync + LogLevel + ContainerIdentidy + HeartbeatConfigProvider,
+    C: Debug
+        + Send
+        + 'static
+        + DeserializeOwned
+        + Sync
+        + LogLevel
+        + ContainerIdentidy
+        + HeartbeatConfigProvider,
     T: HyperionContainerDirectiveMessage
         + HyperionHeartbeatMessage
         + Debug

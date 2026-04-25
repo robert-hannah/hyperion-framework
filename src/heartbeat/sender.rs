@@ -35,7 +35,6 @@ use crate::heartbeat::handler::HeartbeatMissedHandler;
 use crate::messages::heartbeat::HeartbeatResponse;
 use crate::utilities::time::{current_epoch_ms, fmt_ms};
 
-
 pub struct HeartbeatSender<T> {
     interval_ms: u64,
     response_timeout_ms: u64,
@@ -66,7 +65,10 @@ where
                 if let Some(s) = all_senders.get(name) {
                     Some((name.clone(), s.clone()))
                 } else {
-                    log::warn!("HeartbeatSender: target '{}' not found in client senders — skipping", name);
+                    log::warn!(
+                        "HeartbeatSender: target '{}' not found in client senders — skipping",
+                        name
+                    );
                     None
                 }
             })
@@ -84,14 +86,17 @@ where
                 pending: HashMap::new(),
                 missed_handler,
             },
-            response_tx
+            response_tx,
         )
     }
 
     pub async fn run(mut self) {
         let mut ticker = interval(Duration::from_millis(self.interval_ms));
         ticker.tick().await; // consume the immediate first tick
-        log::info!("HeartbeatSender running — targets: {:?}", self.target_senders.keys().collect::<Vec<_>>());
+        log::info!(
+            "HeartbeatSender running — targets: {:?}",
+            self.target_senders.keys().collect::<Vec<_>>()
+        );
 
         loop {
             tokio::select! {

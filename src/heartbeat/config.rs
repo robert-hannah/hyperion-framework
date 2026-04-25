@@ -26,27 +26,27 @@ use serde::{Deserialize, Serialize};
 pub enum HeartbeatMode {
     Sender,
     Receiver,
-    Disabled
+    Disabled,
 }
 
 #[derive(Debug, Clone)]
 pub struct HeartbeatSenderConfig {
     pub interval_ms: u64,
     pub response_timeout_ms: u64,
-    pub targets: Vec<String>
+    pub targets: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
 pub struct HeartbeatReceiverConfig {
     /// How long to wait without receiving a request before triggering the timeout handler.
-    pub timeout_ms: u64
+    pub timeout_ms: u64,
 }
 
 #[derive(Debug, Clone)]
 pub struct HeartbeatConfig {
     pub mode: HeartbeatMode,
     pub sender: Option<HeartbeatSenderConfig>,
-    pub receiver: Option<HeartbeatReceiverConfig>
+    pub receiver: Option<HeartbeatReceiverConfig>,
 }
 
 impl HeartbeatConfig {
@@ -58,7 +58,7 @@ impl HeartbeatConfig {
                 response_timeout_ms,
                 targets,
             }),
-            receiver: None
+            receiver: None,
         }
     }
 
@@ -104,22 +104,33 @@ impl HeartbeatXml {
     pub fn to_config(&self) -> Option<HeartbeatConfig> {
         match self.mode.as_str() {
             "sender" => {
-                let interval_ms = self.interval_ms
-                    .unwrap_or_else(|| panic!("Heartbeat mode is 'sender' but interval_ms is missing"));
-                let response_timeout_ms = self.response_timeout_ms
-                    .unwrap_or_else(|| panic!("Heartbeat mode is 'sender' but response_timeout_ms is missing"));
-                let targets = self.targets.as_ref()
+                let interval_ms = self.interval_ms.unwrap_or_else(|| {
+                    panic!("Heartbeat mode is 'sender' but interval_ms is missing")
+                });
+                let response_timeout_ms = self.response_timeout_ms.unwrap_or_else(|| {
+                    panic!("Heartbeat mode is 'sender' but response_timeout_ms is missing")
+                });
+                let targets = self
+                    .targets
+                    .as_ref()
                     .map(|t| t.targets.clone())
                     .unwrap_or_default();
-                Some(HeartbeatConfig::sender(interval_ms, response_timeout_ms, targets))
+                Some(HeartbeatConfig::sender(
+                    interval_ms,
+                    response_timeout_ms,
+                    targets,
+                ))
             }
             "receiver" => {
-                let timeout_ms = self.timeout_ms
-                    .unwrap_or_else(|| panic!("Heartbeat mode is 'receiver' but timeout_ms is missing"));
+                let timeout_ms = self.timeout_ms.unwrap_or_else(|| {
+                    panic!("Heartbeat mode is 'receiver' but timeout_ms is missing")
+                });
                 Some(HeartbeatConfig::receiver(timeout_ms))
             }
             "disabled" => None,
-            unknown => panic!("Unknown heartbeat mode: '{unknown}'. Expected 'sender', 'receiver', or 'disabled'"),
+            unknown => panic!(
+                "Unknown heartbeat mode: '{unknown}'. Expected 'sender', 'receiver', or 'disabled'"
+            ),
         }
     }
 }

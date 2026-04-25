@@ -29,7 +29,7 @@ pub struct HeartbeatRequest {
     pub timestamp_ms: u64,
     pub component_alive: bool,
     pub ms_since_last_activity: u64,
-    pub container_state_val: usize
+    pub container_state_val: usize,
 }
 
 /// Parsed form of a HeartbeatResponse, forwarded by the container to the sender task.
@@ -40,5 +40,5 @@ pub struct HeartbeatResponse {
     pub timestamp_ms: u64,
     pub component_alive: bool,
     pub ms_since_last_activity: u64,
-    pub container_state_val: usize
+    pub container_state_val: usize,
 }

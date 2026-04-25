@@ -19,7 +19,9 @@ use tokio::time::{Duration, sleep};
 // Local
 use crate::containerisation::client_broker::ClientBroker;
 use crate::containerisation::container_state::ContainerState;
-use crate::containerisation::traits::{HyperionContainerDirectiveMessage, HyperionHeartbeatMessage, Run};
+use crate::containerisation::traits::{
+    HyperionContainerDirectiveMessage, HyperionHeartbeatMessage, Run,
+};
 use crate::heartbeat::config::{HeartbeatConfig, HeartbeatMode};
 use crate::heartbeat::handler::{HeartbeatMissedHandler, HeartbeatTimeoutHandler};
 use crate::heartbeat::receiver::HeartbeatReceiver;
@@ -116,7 +118,9 @@ where
         A: Run<Message = T> + Send + 'static + Sync + Debug,
     {
         task::spawn(async move {
-            component_archetype.run(component_in_rx, component_out_tx).await;
+            component_archetype
+                .run(component_in_rx, component_out_tx)
+                .await;
         })
     }
 
@@ -126,7 +130,10 @@ where
         all_senders: std::collections::HashMap<String, mpsc::Sender<T>>,
         timeout_handler: Option<Box<dyn HeartbeatTimeoutHandler>>,
         missed_handler: Option<Box<dyn HeartbeatMissedHandler>>,
-    ) -> (Option<mpsc::Sender<HeartbeatRequest>>, Option<mpsc::Sender<HeartbeatResponse>>) {
+    ) -> (
+        Option<mpsc::Sender<HeartbeatRequest>>,
+        Option<mpsc::Sender<HeartbeatResponse>>,
+    ) {
         let config = match heartbeat_config {
             Some(c) if c.mode != HeartbeatMode::Disabled => c,
             _ => return (None, None),
@@ -167,11 +174,8 @@ where
                         return (None, None);
                     }
                 };
-                let (receiver_task, request_tx) = HeartbeatReceiver::new(
-                    receiver_cfg.timeout_ms,
-                    all_senders,
-                    handler,
-                );
+                let (receiver_task, request_tx) =
+                    HeartbeatReceiver::new(receiver_cfg.timeout_ms, all_senders, handler);
                 task::spawn(async move { receiver_task.run().await });
                 (Some(request_tx), None)
             }

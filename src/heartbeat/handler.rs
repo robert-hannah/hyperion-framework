@@ -30,7 +30,6 @@ use tokio::sync::Notify;
 // Local
 use crate::containerisation::container_state::ContainerState;
 
-
 /// Called by the receiver watchdog when no heartbeat request has arrived within the timeout window.
 pub trait HeartbeatTimeoutHandler: Send + Sync + 'static {
     fn on_timeout(&self);
@@ -76,19 +75,25 @@ impl HeartbeatTimeoutHandler for FnHandler {
 /// Convenience handler: initiates a graceful container shutdown.
 pub struct ShutdownOnTimeout {
     container_state: Arc<AtomicUsize>,
-    container_state_notify: Arc<Notify>
+    container_state_notify: Arc<Notify>,
 }
 
 impl ShutdownOnTimeout {
     pub fn new(container_state: Arc<AtomicUsize>, container_state_notify: Arc<Notify>) -> Self {
-        Self { container_state, container_state_notify }
+        Self {
+            container_state,
+            container_state_notify,
+        }
     }
 }
 
 impl HeartbeatTimeoutHandler for ShutdownOnTimeout {
     fn on_timeout(&self) {
-        log::warn!("HeartbeatReceiver: timeout — no request received within window. Initiating shutdown.");
-        self.container_state.store(ContainerState::ShuttingDown as usize, Ordering::SeqCst);
+        log::warn!(
+            "HeartbeatReceiver: timeout — no request received within window. Initiating shutdown."
+        );
+        self.container_state
+            .store(ContainerState::ShuttingDown as usize, Ordering::SeqCst);
         self.container_state_notify.notify_waiters();
     }
 }

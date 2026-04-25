@@ -32,9 +32,9 @@ use tokio::sync::mpsc::{Receiver, Sender};
 
 // Local
 use crate::heartbeat::config::HeartbeatConfig;
-use crate::messages::heartbeat::{HeartbeatRequest, HeartbeatResponse};
 use crate::messages::client_broker_message::ClientBrokerMessage;
 use crate::messages::container_directive::ContainerDirective;
+use crate::messages::heartbeat::{HeartbeatRequest, HeartbeatResponse};
 
 // Traits
 pub trait Initialisable {
@@ -152,15 +152,19 @@ pub trait HyperionHeartbeatMessage {
     fn as_heartbeat_request(&self) -> Option<HeartbeatRequest>;
     fn as_heartbeat_response(&self) -> Option<HeartbeatResponse>;
     fn make_heartbeat_request(
-        request_id: u64, 
-        sender_name: String, 
-        timestamp_ms: u64
-    ) -> Option<Self> where Self: Sized;
+        request_id: u64,
+        sender_name: String,
+        timestamp_ms: u64,
+    ) -> Option<Self>
+    where
+        Self: Sized;
     fn make_heartbeat_response(
-        request_id: u64, 
-        timestamp_ms: u64, 
-        component_alive: bool, 
-        ms_since_last_activity: u64, 
-        container_state_val: usize
-    ) -> Option<Self> where Self: Sized;
+        request_id: u64,
+        timestamp_ms: u64,
+        component_alive: bool,
+        ms_since_last_activity: u64,
+        container_state_val: usize,
+    ) -> Option<Self>
+    where
+        Self: Sized;
 }
