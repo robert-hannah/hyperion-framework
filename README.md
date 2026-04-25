@@ -86,7 +86,6 @@ Contributions are welcome! Please feel free to submit a PR with a comprehensive 
 ### Current TODOs (feel free to contact for more details)
 - Manually retry connections if the connection retry cap is reached
 - Improved container startup boilerplate
-- Generally improve unit and integration test coverage
 - Component restart on failure (automatic and ClI induced)
 
 ## License
