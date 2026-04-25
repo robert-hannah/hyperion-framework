@@ -27,5 +27,5 @@ use serde::{Deserialize, Serialize};
 pub enum ComponentState {
     Active = 0,  // Component is running
     Dormant = 1, // Component has been set to dormant, not accepting comms
-    Dead = 2,    // Component is dead but can be restarted
+    Dead = 2     // Component is dead but can be restarted
 }

@@ -122,6 +122,12 @@ where
         }
     }
 
+    /// Returns clones of all client senders, keyed by connection name.
+    /// Used by heartbeat tasks to send directly to peer containers.
+    pub fn clone_all_senders(&self) -> HashMap<String, mpsc::Sender<T>> {
+        self.client_senders.clone()
+    }
+
     pub async fn forward_shutdown(&mut self, message: T) {
         // Send shutdown command across all clients
         for (name, sender) in &self.client_senders {

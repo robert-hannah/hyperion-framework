@@ -28,7 +28,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use hyperion_framework::containerisation::client_broker::ClientBroker;
 use hyperion_framework::containerisation::container_state::ContainerState;
 use hyperion_framework::containerisation::hyperion_container::HyperionContainer;
-use hyperion_framework::containerisation::traits::{HyperionContainerDirectiveMessage, Run};
+use hyperion_framework::containerisation::traits::{HyperionContainerDirectiveMessage, HyperionHeartbeatMessage, Run};
+use hyperion_framework::messages::heartbeat::{HeartbeatRequest, HeartbeatResponse};
 use hyperion_framework::messages::client_broker_message::ClientBrokerMessage;
 use hyperion_framework::messages::container_directive::ContainerDirective;
 use hyperion_framework::network::network_topology::{ClientConnections, NetworkTopology};
@@ -50,6 +51,13 @@ impl HyperionContainerDirectiveMessage for TestMessage {
             None
         }
     }
+}
+
+impl HyperionHeartbeatMessage for TestMessage {
+    fn as_heartbeat_request(&self) -> Option<HeartbeatRequest> { None }
+    fn as_heartbeat_response(&self) -> Option<HeartbeatResponse> { None }
+    fn make_heartbeat_request(_request_id: u64, _sender_name: String, _timestamp_ms: u64) -> Option<Self> { None }
+    fn make_heartbeat_response(_request_id: u64, _timestamp_ms: u64, _component_alive: bool, _ms_since_last_activity: u64, _container_state_val: usize) -> Option<Self> { None }
 }
 
 #[derive(Debug, Clone)]
@@ -114,6 +122,10 @@ async fn forwards_non_framework_messages_to_component() {
         client_broker,
         main_rx,
         server_rx,
+        None,
+        "test".to_string(),
+        None,
+        None,
     );
 
     // spawn container
@@ -167,6 +179,10 @@ async fn shutdown_and_system_shutdown_transitions_state() {
         client_broker,
         main_rx,
         server_rx,
+        None,
+        "test".to_string(),
+        None,
+        None,
     );
 
     let handle = tokio::spawn(async move {

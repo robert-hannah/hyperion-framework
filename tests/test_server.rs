@@ -52,7 +52,7 @@ pub enum ContainerMessage {
 // Simulates a client connecting and sending a message
 async fn _client_task(id: usize) {
     // Create a test message
-    let message = ContainerMessage::ContainerDirectiveMsg(ContainerDirective::Heartbeat);
+    let message = ContainerMessage::ContainerDirectiveMsg(ContainerDirective::RetryAllConnections);
 
     // Serialize to bytes
     let payload = serialise_message(&message).expect("Message serialisation failed");

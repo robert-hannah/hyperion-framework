@@ -38,8 +38,15 @@ use tokio::time::{Duration, sleep};
 use crate::containerisation::client_broker::ClientBroker;
 use crate::containerisation::hyperion_container::HyperionContainer;
 use crate::containerisation::traits::{
-    ContainerIdentidy, HyperionContainerDirectiveMessage, Initialisable, LogLevel, Run,
+    ContainerIdentidy,
+    HeartbeatConfigProvider,
+    HyperionContainerDirectiveMessage,
+    HyperionHeartbeatMessage,
+    Initialisable,
+    LogLevel,
+    Run
 };
+use crate::heartbeat::handler::{HeartbeatMissedHandler, HeartbeatTimeoutHandler};
 use crate::logging::logging_service::initialise_logger;
 use crate::network::network_topology::NetworkTopology;
 use crate::network::server::Server;
@@ -54,11 +61,14 @@ pub async fn create<A, C, T>(
     container_state: StdArc<AtomicUsize>,
     container_state_notify: StdArc<Notify>,
     main_rx: mpsc::Receiver<T>,
+    timeout_handler: Option<Box<dyn HeartbeatTimeoutHandler>>,
+    missed_handler: Option<Box<dyn HeartbeatMissedHandler>>,
 ) -> HyperionContainer<T>
 where
     A: Initialisable<ConfigType = C> + Run<Message = T> + Send + 'static + Sync + Debug,
-    C: Debug + Send + 'static + DeserializeOwned + Sync + LogLevel + ContainerIdentidy,
+    C: Debug + Send + 'static + DeserializeOwned + Sync + LogLevel + ContainerIdentidy + HeartbeatConfigProvider,
     T: HyperionContainerDirectiveMessage
+        + HyperionHeartbeatMessage
         + Debug
         + Send
         + 'static
@@ -137,7 +147,14 @@ where
     // Allow time for client(s) to stabilise
     sleep(Duration::from_secs(2)).await;
 
-    // Using previous elements, build HyperionContainer
+    let container_name = component_config
+        .container_identity()
+        .get("name")
+        .cloned()
+        .unwrap_or_else(|| "Unknown".to_string());
+
+    let heartbeat_config = component_config.heartbeat_config();
+
     HyperionContainer::<T>::create(
         component_archetype,
         container_state,
@@ -145,5 +162,9 @@ where
         client_broker,
         main_rx,
         server_rx,
+        heartbeat_config,
+        container_name,
+        timeout_handler,
+        missed_handler,
     )
 }

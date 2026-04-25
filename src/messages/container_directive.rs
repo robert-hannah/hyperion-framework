@@ -28,12 +28,22 @@ use crate::containerisation::container_state::ContainerState;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ContainerDirective {
-    // IMPLEMENTED
-    Shutdown,       // Shutdown local container
-    SystemShutdown, // Shutdown command that is propagated through the container network
-    // TO BE IMPLEMENTED
-    RetryAllConnections,           // Retries any broken connections
-    Heartbeat,                     // Container heartbeat
-    FriendStateRequest,            // Request the state of a friend container
-    StateResponse(ContainerState), // Response to a container state request
+    Shutdown,
+    SystemShutdown,
+    RetryAllConnections,
+    HeartbeatRequest {
+        request_id: u64,
+        sender_name: String,
+        timestamp_ms: u64,
+    },
+    HeartbeatResponse {
+        request_id: u64,
+        responder_name: String,
+        timestamp_ms: u64,
+        component_alive: bool,
+        ms_since_last_activity: u64,
+        container_state_val: usize,
+    },
+    FriendStateRequest,
+    StateResponse(ContainerState),
 }

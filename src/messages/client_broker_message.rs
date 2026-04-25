@@ -26,14 +26,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ClientBrokerMessage<T> {
     pub target_clients: Vec<String>,
-    pub message: T,
+    pub message: T
 }
 
 impl<T> ClientBrokerMessage<T> {
     pub fn new(target_clients: Vec<&str>, message: T) -> Self {
         Self {
             target_clients: target_clients.iter().map(|s| s.to_string()).collect(),
-            message,
+            message
         }
     }
 }
