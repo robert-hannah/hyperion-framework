@@ -9,6 +9,7 @@ A lightweight component-based TCP framework for building service-oriented Rust a
 - ⚙️ **Configuration Handling**: Built in unique config and network topology handling for each component
 - 💻 **CLI Integration**: Command-line interface for system control and monitoring
 - 🔄 **State Management**: Robust component state handling and lifecycle management
+- 💓 **Heartbeat Monitoring**: Built-in liveness monitoring with configurable sender/receiver roles and custom handlers
 - 📦 **Containerisation**: Simplified component containment and management
 - 🚀 **Async Support**: Built on tokio for high-performance async operations
 
@@ -39,7 +40,7 @@ Hyperion is also built on top of the Tokio async runtime, enabling high-performa
 
 Add this to your `Cargo.toml`:
 
-`hyperion-network = 0.4.0`
+`hyperion-framework = "0.5.0"`
 
 
 ## [**Example Implementation**](https://github.com/robert-hannah/hyperion-framework-examples)
@@ -55,6 +56,18 @@ Add this to your `Cargo.toml`:
 - `utilities/`: Common utilities and helper functions
 - `data_management/`: Data handling and persistence
 - `containerisation/`: Component lifecycle and state management
+- `heartbeat/`: Heartbeat sender, receiver, config, and handlers
+
+## Heartbeat System
+
+Hyperion has a built-in heartbeat subsystem for monitoring liveness between components. Each container can operate as a **Sender**, **Receiver**, or have heartbeats **Disabled**, configured via `configuration.xml`.
+
+- **Sender**: periodically sends requests to named target components, tracks responses, and calls a `HeartbeatMissedHandler` for any target that doesn't respond within `response_timeout_ms`
+- **Receiver**: responds to incoming requests with component health data (alive status, time since last activity, container state), and fires a `HeartbeatTimeoutHandler` if no request arrives within `timeout_ms`
+- **Handlers** (`HeartbeatMissedHandler`, `HeartbeatTimeoutHandler`): user-defined callbacks, wired in at container startup. `FnHandler` / `FnMissedHandler` wrap a closure inline; `ShutdownOnTimeout` is a convenience handler that initiates a graceful shutdown when the receiver times out
+- Heartbeat messages flow through the same channel as your application messages — implement `HyperionHeartbeatMessage` on your message enum and `HeartbeatConfigProvider` on your `Config` struct to opt in
+
+See the [example repository](https://github.com/robert-hannah/hyperion-framework-examples) for a full wiring walkthrough.
 
 ## Dependencies
 
@@ -71,7 +84,6 @@ Add this to your `Cargo.toml`:
 Contributions are welcome! Please feel free to submit a PR with a comprehensive description of work done.
 
 ### Current TODOs (feel free to contact for more details)
-- Container heartbeats/master container state request mechanic
 - Manually retry connections if the connection retry cap is reached
 - Improved container startup boilerplate
 - Generally improve unit and integration test coverage
