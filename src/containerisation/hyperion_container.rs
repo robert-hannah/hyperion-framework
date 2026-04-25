@@ -2,7 +2,22 @@
 // Hyperion Framework
 // https://github.com/robert-hannah/hyperion-framework
 //
-// Copyright 2025 Robert Hannah — Apache-2.0
+// A lightweight component-based TCP framework for building service-oriented Rust applications with
+// CLI control, async messaging, and lifecycle management.
+//
+// Copyright 2025 Robert Hannah
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 // -------------------------------------------------------------------------------------------------
 
 // Standard
@@ -60,6 +75,7 @@ where
         + Serialize,
 {
     pub fn create<A>(
+        // TODO: Use component_archetype for component restart? Can we store a clean one inside the container without enforcing clone?
         component_archetype: A,
         container_state: StdArc<AtomicUsize>,
         container_state_notify: StdArc<Notify>,
@@ -183,9 +199,11 @@ where
         }
     }
 
+    /// HyperionContainer main loop
     pub async fn run(&mut self) {
         log::info!("Hyperion Container is running!");
         loop {
+            // Check if Container is dying
             let state = self.container_state.load(Ordering::SeqCst);
             if state == ContainerState::ShuttingDown as usize
                 || state == ContainerState::DeadComponent as usize
@@ -195,6 +213,7 @@ where
                     .store(ContainerState::ShuttingDown as usize, Ordering::SeqCst);
                 self.container_state_notify.notify_waiters();
 
+                // Allow time for comms to stop etc. before stopping main.rs
                 sleep(Duration::from_secs(3)).await;
                 self.container_state
                     .store(ContainerState::Closed as usize, Ordering::SeqCst);
@@ -202,6 +221,7 @@ where
                 break;
             }
 
+            // Check Component task handle
             if self.component_handle.is_finished() {
                 log::warn!("Component task has finished unexpectedly.");
                 self.container_state
@@ -210,15 +230,15 @@ where
             }
 
             tokio::select! {
-                Some(message) = self.main_rx.recv() => {
+                Some(message) = self.main_rx.recv() => {                // Messages from console
                     log::trace!("Container received message from console: {message:?}");
                     self.process_incoming_message(message).await;
                 }
-                Some(message) = self.server_rx.recv() => {
+                Some(message) = self.server_rx.recv() => {              // Messages from Server
                     log::trace!("Container received message from server: {message:?}");
                     self.process_incoming_message(message).await;
                 }
-                Some(message) = self.component_out_rx.recv() => {
+                Some(message) = self.component_out_rx.recv() => {       // Messages from Component
                     log::trace!("Container received message from Component: {message:?}");
                     self.last_activity_ms.store(current_epoch_ms(), Ordering::SeqCst);
                     self.client_broker.handle_message(message).await;
@@ -256,16 +276,20 @@ where
             match container_directive {
                 ContainerDirective::Shutdown => {
                     log::info!("Container received shutdown directive");
+                    // Set shutdown state
                     self.container_state
                         .store(ContainerState::ShuttingDown as usize, Ordering::SeqCst);
                     self.container_state_notify.notify_waiters();
                 }
                 ContainerDirective::SystemShutdown => {
                     log::info!("Container received system shutdown directive");
+                    // Forward shutdown message
                     self.client_broker.forward_shutdown(message.clone()).await;
+                    // Set shutdown state
                     self.container_state
                         .store(ContainerState::ShuttingDown as usize, Ordering::SeqCst);
                     self.container_state_notify.notify_waiters();
+                    // Wait for clients to finish
                     self.client_broker.shutdown().await;
                 }
                 _ => {
@@ -273,6 +297,7 @@ where
                 }
             }
         } else {
+            // Send to component without inspection (ComponentDirective or non-generic message)
             log::trace!("Forwarding non-framework message to component: {message:?}");
             add_to_tx_with_retry(
                 &self.component_in_tx,

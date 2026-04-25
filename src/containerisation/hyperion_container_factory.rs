@@ -157,6 +157,7 @@ where
 
     let heartbeat_config = component_config.heartbeat_config();
 
+    // Using previous elements, build HyperionContainer
     HyperionContainer::<T>::create(
         component_archetype,
         container_state,
