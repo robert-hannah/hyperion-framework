@@ -496,20 +496,20 @@ async fn sender_does_not_call_missed_handler_when_responses_arrive() {
 
     // Echo every request back as a response within the timeout window
     for _ in 0..4 {
-        if let Ok(Some(msg)) = timeout(Duration::from_millis(200), target_rx.recv()).await {
-            if let Some(req) = msg.as_heartbeat_request() {
-                response_tx
-                    .send(HeartbeatResponse {
-                        request_id: req.request_id,
-                        responder_name: "Target".to_string(),
-                        timestamp_ms: 0,
-                        component_alive: true,
-                        ms_since_last_activity: 10,
-                        container_state_val: 0,
-                    })
-                    .await
-                    .unwrap();
-            }
+        if let Ok(Some(msg)) = timeout(Duration::from_millis(200), target_rx.recv()).await
+            && let Some(req) = msg.as_heartbeat_request()
+        {
+            response_tx
+                .send(HeartbeatResponse {
+                    request_id: req.request_id,
+                    responder_name: "Target".to_string(),
+                    timestamp_ms: 0,
+                    component_alive: true,
+                    ms_since_last_activity: 10,
+                    container_state_val: 0,
+                })
+                .await
+                .unwrap();
         }
     }
 

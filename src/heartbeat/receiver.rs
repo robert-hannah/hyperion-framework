@@ -86,10 +86,9 @@ where
                             request.component_alive,
                             request.ms_since_last_activity,
                             request.container_state_val,
-                        ) {
-                            if sender.try_send(msg).is_err() {
-                                log::warn!("HeartbeatReceiver: failed to send response to '{}'", request.sender_name);
-                            }
+                        )
+                        && sender.try_send(msg).is_err() {
+                            log::warn!("HeartbeatReceiver: failed to send response to '{}'", request.sender_name);
                         }
                     } else {
                         log::warn!("HeartbeatReceiver: no sender found for '{}' — cannot respond", request.sender_name);

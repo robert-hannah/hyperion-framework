@@ -74,8 +74,9 @@ where
         + Clone
         + Serialize,
 {
+    // TODO: Use component_archetype for component restart? Can we store a clean one inside the container without enforcing clone?
+    #[allow(clippy::too_many_arguments)]
     pub fn create<A>(
-        // TODO: Use component_archetype for component restart? Can we store a clean one inside the container without enforcing clone?
         component_archetype: A,
         container_state: StdArc<AtomicUsize>,
         container_state_notify: StdArc<Notify>,

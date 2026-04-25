@@ -23,9 +23,6 @@
 // Package
 use serde::{Deserialize, Serialize};
 
-// Local
-use crate::containerisation::container_state::ContainerState;
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ContainerDirective {
     Shutdown,       // Shutdown local container
