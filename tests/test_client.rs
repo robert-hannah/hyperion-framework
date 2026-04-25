@@ -19,433 +19,271 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // -------------------------------------------------------------------------------------------------
-#![allow(unused_imports)]
 
 // Standard
 use std::sync::Arc as StdArc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::Instant;
 
 // Package
 use hyperion_framework::containerisation::container_state::ContainerState;
 use hyperion_framework::messages::container_directive::ContainerDirective;
 use hyperion_framework::network::client::Client;
 use hyperion_framework::network::serialiser;
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use serde::{Deserialize, Serialize};
+use tokio::io::AsyncReadExt;
 use tokio::net::TcpListener;
 use tokio::sync::{Notify, mpsc};
-use tokio::task::JoinSet;
-use tokio::time::{Duration, sleep, timeout};
+use tokio::time::{Duration, sleep};
 
-// Constants
-const _WAIT_TIME: u64 = 5;
-
-// This will be the message that is sent between containers
-// Container directive is essential for Hyperion to work
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ContainerMessage {
     ContainerDirectiveMsg(ContainerDirective),
 }
 
+// ---- Helpers ---------------------------------------------------------------------------------
+
+/// Bind to port 0, let the OS assign an ephemeral port, and return the listener + its address.
+async fn bind_ephemeral() -> (TcpListener, String) {
+    let listener = TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("bind ephemeral listener");
+    let addr = listener.local_addr().unwrap().to_string();
+    (listener, addr)
+}
+
+/// Read one length-prefixed framed String message from an already-connected socket.
+async fn read_framed_string(socket: &mut tokio::net::TcpStream) -> String {
+    let mut len_buf = [0u8; 4];
+    socket
+        .read_exact(&mut len_buf)
+        .await
+        .expect("read length prefix");
+    let len = u32::from_be_bytes(len_buf) as usize;
+    let mut payload = vec![0u8; len];
+    socket.read_exact(&mut payload).await.expect("read payload");
+    serialiser::deserialise_message::<String>(&payload).expect("deserialise")
+}
+
+fn new_state_and_notify() -> (StdArc<AtomicUsize>, StdArc<Notify>) {
+    (
+        StdArc::new(AtomicUsize::new(ContainerState::Running as usize)),
+        StdArc::new(Notify::new()),
+    )
+}
+
+fn shutdown(state: &StdArc<AtomicUsize>, notify: &StdArc<Notify>) {
+    state.store(ContainerState::ShuttingDown as usize, Ordering::SeqCst);
+    notify.notify_waiters();
+}
+
+// ---- Tests -----------------------------------------------------------------------------------
+
 #[tokio::test]
 async fn test_client_connects_to_server() {
-    let address = "127.0.0.1:9999";
+    let (listener, addr) = bind_ephemeral().await;
+    let (state, notify) = new_state_and_notify();
     let (_tx, rx) = mpsc::channel::<ContainerMessage>(10);
-    let state = StdArc::new(AtomicUsize::new(ContainerState::Running as usize));
-    let notify = StdArc::new(Notify::new());
 
-    let listener = TcpListener::bind(address)
-        .await
-        .expect("Failed to bind server");
     let client = Client::new(
-        "TestClient".to_string(),
-        address.to_string(),
+        "TestClient".into(),
+        addr,
         rx,
         state.clone(),
         notify.clone(),
         3,
     );
-
-    // Run the client in a separate task
     let client_task = tokio::spawn(async move {
         let _ = client.run().await;
     });
 
-    // Accept the connection
-    let (socket, _) = listener
-        .accept()
-        .await
-        .expect("Failed to accept connection");
-
-    // Wait a moment to ensure connections have stabilised
-    sleep(Duration::from_secs(_WAIT_TIME)).await;
-
+    let (socket, _) = listener.accept().await.expect("accept connection");
     assert!(socket.peer_addr().is_ok());
 
-    // Cleanup
-    state.store(ContainerState::ShuttingDown as usize, Ordering::SeqCst);
-    notify.notify_waiters();
-    client_task.await.expect("Client task failed");
+    // Give the client task time to reach its select loop before we call notify_waiters().
+    // notify_waiters() only wakes tasks already polling notified() — it does not store a permit.
+    sleep(Duration::from_millis(100)).await;
+
+    shutdown(&state, &notify);
+    client_task.await.expect("client task");
 }
 
 #[tokio::test]
 async fn test_client_does_not_blow_up_on_connection_failure() {
-    let address = "127.0.0.1:9998";
-    let (_tx, rx) = mpsc::channel::<ContainerMessage>(10);
-    let state = StdArc::new(AtomicUsize::new(ContainerState::Running as usize));
-    let notify = StdArc::new(Notify::new());
+    // Pre-bind then drop so the port is genuinely closed when the client tries.
+    let (listener, addr) = bind_ephemeral().await;
+    drop(listener);
 
+    let (state, notify) = new_state_and_notify();
+    let (_tx, rx) = mpsc::channel::<ContainerMessage>(10);
+
+    // max_send_retries = 1: first failure increments to 1 >= 1, exits immediately with no sleep.
     let client = Client::new(
-        "TestClient".to_string(),
-        address.to_string(),
+        "TestClient".into(),
+        addr,
         rx,
         state.clone(),
         notify.clone(),
-        2, // Small retry limit for test
+        1,
     );
-
-    // Run the client in a separate task
     let client_task = tokio::spawn(async move {
         let _ = client.run().await;
     });
 
-    // Give some time for retries
-    sleep(Duration::from_secs(_WAIT_TIME)).await;
-
-    // Cleanup - should do it itself due to connection failure
-    client_task.await.expect("Client task failed");
+    client_task
+        .await
+        .expect("client should exit cleanly after exhausting retries");
 }
 
 #[tokio::test]
 async fn test_client_retries_on_server_connection_failure() {
-    let address = "127.0.0.1:9997";
+    // Pre-bind to get an ephemeral address, then drop so the client's first attempt fails.
+    let (tmp_listener, addr) = bind_ephemeral().await;
+    drop(tmp_listener);
+
     let (tx, rx) = mpsc::channel::<String>(10);
-    let state = StdArc::new(AtomicUsize::new(ContainerState::Running as usize));
-    let notify = StdArc::new(Notify::new());
+    let (state, notify) = new_state_and_notify();
 
     let client = Client::new(
-        "TestClient".to_string(),
-        address.to_string(),
+        "TestClient".into(),
+        addr.clone(),
         rx,
         state.clone(),
         notify.clone(),
-        10, // Allow retries
+        10,
     );
-
     let client_task = tokio::spawn(async move {
         let _ = client.run().await;
     });
 
-    // Wait a moment to let the client struggle
-    sleep(Duration::from_secs(_WAIT_TIME)).await;
+    // Wait long enough for the first connect attempt to fail and begin its 1-second backoff.
+    sleep(Duration::from_millis(200)).await;
 
-    // Start the server
-    let listener = TcpListener::bind(address)
-        .await
-        .expect("Failed to bind server");
-    sleep(Duration::from_secs(_WAIT_TIME)).await;
+    // Now bring the server up so the client can succeed on its next attempt (~1s from now).
+    let listener = TcpListener::bind(&addr).await.expect("re-bind server");
 
-    // Create listener in server
-    let (mut socket, _) = listener
-        .accept()
-        .await
-        .expect("Failed to accept connection");
-    sleep(Duration::from_secs(_WAIT_TIME)).await;
+    let (mut socket, _) = listener.accept().await.expect("accept connection");
 
-    // Send a test message
+    let message = "Hello, retry world!".to_string();
+    tx.send(message.clone()).await.expect("send message");
+
+    let received = read_framed_string(&mut socket).await;
+    assert_eq!(received, message);
+
+    shutdown(&state, &notify);
+    client_task.await.expect("client task");
+}
+
+#[tokio::test]
+async fn test_client_sends_messages() {
+    let (listener, addr) = bind_ephemeral().await;
+    let (tx, rx) = mpsc::channel::<String>(10);
+    let (state, notify) = new_state_and_notify();
+
+    let client = Client::new(
+        "TestClient".into(),
+        addr,
+        rx,
+        state.clone(),
+        notify.clone(),
+        3,
+    );
+    let client_task = tokio::spawn(async move {
+        let _ = client.run().await;
+    });
+
+    let (mut socket, _) = listener.accept().await.expect("accept connection");
+    sleep(Duration::from_millis(100)).await;
+
     let message = "Hello, world!".to_string();
-    tx.send(message.clone())
-        .await
-        .expect("Failed to send message");
+    tx.send(message.clone()).await.expect("send message");
 
-    let mut buffer = vec![0u8; 1024];
-    let bytes_read = socket
-        .read(&mut buffer)
-        .await
-        .expect("Failed to read message");
+    let received = read_framed_string(&mut socket).await;
+    assert_eq!(received, message);
 
-    // Step 1: Ensure we have at least 4 bytes for the length prefix
-    assert!(
-        bytes_read >= 4,
-        "Expected at least 4 bytes for length prefix"
+    shutdown(&state, &notify);
+    client_task.await.expect("client task");
+}
+
+#[tokio::test]
+async fn test_client_shuts_down_gracefully() {
+    let (listener, addr) = bind_ephemeral().await;
+    let (state, notify) = new_state_and_notify();
+    let (_tx, rx) = mpsc::channel::<ContainerMessage>(10);
+
+    let client = Client::new(
+        "TestClient".into(),
+        addr,
+        rx,
+        state.clone(),
+        notify.clone(),
+        3,
     );
+    let client_task = tokio::spawn(async move {
+        let _ = client.run().await;
+    });
 
-    // Step 2: Parse length prefix
-    let len_bytes: [u8; 4] = buffer[..4].try_into().expect("Failed to get length prefix");
-    let msg_len = u32::from_be_bytes(len_bytes) as usize;
+    let (_socket, _) = listener.accept().await.expect("accept connection");
+    sleep(Duration::from_millis(100)).await;
 
-    // Step 3: Ensure the full message was received
+    shutdown(&state, &notify);
     assert!(
-        bytes_read >= 4 + msg_len,
-        "Incomplete message: expected {} bytes, got {}",
-        msg_len,
-        bytes_read - 4
+        client_task.await.is_ok(),
+        "client did not shut down gracefully"
     );
-
-    // Step 4: Extract and deserialise
-    let msg_bytes = &buffer[4..4 + msg_len];
-    let received_message: String =
-        serialiser::deserialise_message(msg_bytes).expect("Deserialisation failed");
-    assert_eq!(received_message, message);
-
-    // Cleanup
-    state.store(ContainerState::ShuttingDown as usize, Ordering::SeqCst);
-    notify.notify_waiters();
-    client_task.await.expect("Client task panicked");
 }
 
 #[tokio::test]
 async fn test_client_is_restartable() {
-    let address = "127.0.0.1:9996";
-    let (tx, rx1) = mpsc::channel::<String>(10);
-    let state = StdArc::new(AtomicUsize::new(ContainerState::Running as usize));
-    let notify = StdArc::new(Notify::new());
+    let (listener, addr) = bind_ephemeral().await;
+    let (state, notify) = new_state_and_notify();
 
-    let listener = TcpListener::bind(address)
-        .await
-        .expect("Failed to bind server");
-    let client = Client::new(
-        "TestClient".to_string(),
-        address.to_string(),
+    // --- First client ---
+    let (tx1, rx1) = mpsc::channel::<String>(10);
+    let client1 = Client::new(
+        "TestClient".into(),
+        addr.clone(),
         rx1,
         state.clone(),
         notify.clone(),
         3,
     );
-
-    let client_task = tokio::spawn(async move {
-        let _ = client.run().await;
+    let task1 = tokio::spawn(async move {
+        let _ = client1.run().await;
     });
 
-    // Create listener in server
-    let (mut socket, _) = listener
-        .accept()
-        .await
-        .expect("Failed to accept connection");
-    sleep(Duration::from_secs(_WAIT_TIME)).await;
+    let (mut socket1, _) = listener.accept().await.expect("accept first connection");
+    sleep(Duration::from_millis(100)).await;
 
-    // Send a test message
-    let message = "Hello, world!".to_string();
-    tx.send(message.clone())
-        .await
-        .expect("Failed to send message");
+    tx1.send("Hello, world!".into()).await.expect("send");
+    assert_eq!(read_framed_string(&mut socket1).await, "Hello, world!");
 
-    let mut buffer = vec![0u8; 1024];
-    let bytes_read = socket
-        .read(&mut buffer)
-        .await
-        .expect("Failed to read message");
+    shutdown(&state, &notify);
+    task1.await.expect("first client task");
 
-    // Step 1: Ensure we have at least 4 bytes for the length prefix
-    assert!(
-        bytes_read >= 4,
-        "Expected at least 4 bytes for length prefix"
-    );
-
-    // Step 2: Parse length prefix
-    let len_bytes: [u8; 4] = buffer[..4].try_into().expect("Failed to get length prefix");
-    let msg_len = u32::from_be_bytes(len_bytes) as usize;
-
-    // Step 3: Ensure the full message was received
-    assert!(
-        bytes_read >= 4 + msg_len,
-        "Incomplete message: expected {} bytes, got {}",
-        msg_len,
-        bytes_read - 4
-    );
-
-    // Step 4: Extract and deserialise
-    let msg_bytes = &buffer[4..4 + msg_len];
-    let received_message: String =
-        serialiser::deserialise_message(msg_bytes).expect("Deserialisation failed");
-    assert_eq!(received_message, message);
-
-    // Shut down client
-    state.store(ContainerState::ShuttingDown as usize, Ordering::SeqCst);
-    notify.notify_waiters();
-    client_task
-        .await
-        .expect("Client did not shut down gracefully");
-
-    // Create a new client to restart connection on same address
-    // This is because the previous client was lost when moved to a new thread
+    // --- Second client (restart) ---
     state.store(ContainerState::Running as usize, Ordering::SeqCst);
     let (tx2, rx2) = mpsc::channel::<String>(10);
     let client2 = Client::new(
-        "TestClient".to_string(),
-        address.to_string(),
+        "TestClient".into(),
+        addr,
         rx2,
         state.clone(),
         notify.clone(),
         3,
     );
-
-    let restarted_task = tokio::spawn(async move {
+    let task2 = tokio::spawn(async move {
         let _ = client2.run().await;
     });
 
-    // Reinstate listener in server
-    let (mut socket, _) = listener
-        .accept()
-        .await
-        .expect("Failed to accept connection");
-    sleep(Duration::from_secs(_WAIT_TIME)).await;
+    let (mut socket2, _) = listener.accept().await.expect("accept second connection");
+    sleep(Duration::from_millis(100)).await;
 
-    // Send a test message
-    let message2 = "Hello, world again!".to_string();
-    tx2.send(message2.clone())
-        .await
-        .expect("Failed to send message");
-
-    let mut buffer = vec![0u8; 1024];
-    let bytes_read = socket
-        .read(&mut buffer)
-        .await
-        .expect("Failed to read message");
-
-    // Step 1: Ensure we have at least 4 bytes for the length prefix
-    assert!(
-        bytes_read >= 4,
-        "Expected at least 4 bytes for length prefix"
+    tx2.send("Hello, world again!".into()).await.expect("send");
+    assert_eq!(
+        read_framed_string(&mut socket2).await,
+        "Hello, world again!"
     );
 
-    // Step 2: Parse length prefix
-    let len_bytes: [u8; 4] = buffer[..4].try_into().expect("Failed to get length prefix");
-    let msg_len = u32::from_be_bytes(len_bytes) as usize;
-
-    // Step 3: Ensure the full message was received
-    assert!(
-        bytes_read >= 4 + msg_len,
-        "Incomplete message: expected {} bytes, got {}",
-        msg_len,
-        bytes_read - 4
-    );
-
-    // Step 4: Extract and deserialise
-    let msg_bytes = &buffer[4..4 + msg_len];
-    let received_message2: String =
-        serialiser::deserialise_message(msg_bytes).expect("Deserialisation failed");
-
-    assert_eq!(received_message2, message2);
-
-    // Shut down client
-    state.store(ContainerState::ShuttingDown as usize, Ordering::SeqCst);
-    notify.notify_waiters();
-    restarted_task
-        .await
-        .expect("Client did not shut down gracefully");
-}
-
-#[tokio::test]
-async fn test_client_sends_messages() {
-    let address = "127.0.0.1:9995";
-    let (tx, rx) = mpsc::channel::<String>(10);
-    let state = StdArc::new(AtomicUsize::new(ContainerState::Running as usize));
-    let notify = StdArc::new(Notify::new());
-
-    let listener = TcpListener::bind(address)
-        .await
-        .expect("Failed to bind server");
-    let client = Client::new(
-        "TestClient".to_string(),
-        address.to_string(),
-        rx,
-        state.clone(),
-        notify.clone(),
-        3,
-    );
-
-    let client_task = tokio::spawn(async move {
-        let _ = client.run().await;
-    });
-
-    // Create listener in server
-    let (mut socket, _) = listener
-        .accept()
-        .await
-        .expect("Failed to accept connection");
-    sleep(Duration::from_secs(_WAIT_TIME)).await;
-
-    // Send a test message
-    let message = "Hello, world!".to_string();
-    tx.send(message.clone())
-        .await
-        .expect("Failed to send message");
-
-    let mut buffer = vec![0u8; 1024];
-    let bytes_read = socket
-        .read(&mut buffer)
-        .await
-        .expect("Failed to read message");
-
-    // Step 1: Ensure we have at least 4 bytes for the length prefix
-    assert!(
-        bytes_read >= 4,
-        "Expected at least 4 bytes for length prefix"
-    );
-
-    // Step 2: Parse length prefix
-    let len_bytes: [u8; 4] = buffer[..4].try_into().expect("Failed to get length prefix");
-    let msg_len = u32::from_be_bytes(len_bytes) as usize;
-
-    // Step 3: Ensure the full message was received
-    assert!(
-        bytes_read >= 4 + msg_len,
-        "Incomplete message: expected {} bytes, got {}",
-        msg_len,
-        bytes_read - 4
-    );
-
-    // Step 4: Extract and deserialise
-    let msg_bytes = &buffer[4..4 + msg_len];
-    let received_message: String =
-        serialiser::deserialise_message(msg_bytes).expect("Deserialisation failed");
-    assert_eq!(received_message, message);
-
-    // Cleanup
-    state.store(ContainerState::ShuttingDown as usize, Ordering::SeqCst);
-    notify.notify_waiters();
-    client_task.await.expect("Client task failed");
-}
-
-#[tokio::test]
-async fn test_client_shuts_down_gracefully() {
-    let address = "127.0.0.1:9994";
-    let listener = TcpListener::bind(address)
-        .await
-        .expect("Failed to bind server");
-
-    let (_tx, rx) = mpsc::channel::<ContainerMessage>(10);
-    let state = StdArc::new(AtomicUsize::new(ContainerState::Running as usize));
-    let notify = StdArc::new(Notify::new());
-
-    let client = Client::new(
-        "TestClient".to_string(),
-        address.to_string(),
-        rx,
-        state.clone(),
-        notify.clone(),
-        3,
-    );
-
-    let client_task = tokio::spawn(async move {
-        let _ = client.run().await;
-    });
-
-    let (_socket, _) = listener
-        .accept()
-        .await
-        .expect("Failed to accept connection");
-
-    // Wait a moment to ensure connections have stabilised
-    sleep(Duration::from_secs(_WAIT_TIME)).await;
-
-    // Initiate shutdown
-    state.store(ContainerState::ShuttingDown as usize, Ordering::SeqCst);
-    notify.notify_waiters();
-
-    // Wait for the client to shut down
-    let result = client_task.await;
-    assert!(result.is_ok(), "Client did not shut down gracefully");
+    shutdown(&state, &notify);
+    task2.await.expect("second client task");
 }
